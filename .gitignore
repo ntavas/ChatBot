@@ -1,0 +1,13 @@
+# Environment variables — never commit secrets
+.env
+
+# Dependencies
+node_modules/
+
+# TypeScript build output
+dist/
+*.js.map
+
+# OS artifacts
+.DS_Store
+Thumbs.db
