@@ -15,6 +15,13 @@ import { MessageBubble } from './MessageBubble'
 const SESSION_ID_KEY = 'chatSessionId'
 const MESSAGES_KEY = 'chatMessages'
 const ERROR_AUTO_DISMISS_MS = 4000
+/** How long the "Clear?" confirmation state stays active before reverting. */
+const CLEAR_CONFIRM_TIMEOUT_MS = 3000
+
+interface ChatWindowProps {
+  isDark: boolean
+  onToggleTheme: () => void
+}
 
 /**
  * Generates a unique session ID using the browser's native crypto API.
@@ -27,9 +34,12 @@ function GenerateSessionId(): string {
  * The main chat window. Manages the full chat lifecycle:
  * session initialisation from localStorage, sending messages, displaying history,
  * showing a typing indicator, and surfacing errors without crashing.
+ *
+ * @param isDark - Whether the dark theme is currently active (used for the toggle icon).
+ * @param onToggleTheme - Callback to flip between light and dark mode.
  */
-export function ChatWindow() {
-  const [sessionId] = useState<string>(() => {
+export function ChatWindow({ isDark, onToggleTheme }: ChatWindowProps) {
+  const [sessionId, setSessionId] = useState<string>(() => {
     return localStorage.getItem(SESSION_ID_KEY) ?? GenerateSessionId()
   })
 
@@ -46,9 +56,32 @@ export function ChatWindow() {
   const [inputText, setInputText] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  // Two-step clear: first click arms it, second click confirms.
+  const [confirmingClear, setConfirmingClear] = useState(false)
 
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const errorTimerRef = useRef<number | null>(null)
+  const clearTimerRef = useRef<number | null>(null)
+  const notificationAudioRef = useRef<HTMLAudioElement | null>(null)
+
+  // Initialise the notification sound and attempt to play it for the welcome message.
+  // Most browsers block autoplay before the first user interaction, so the welcome
+  // chime will silently fail on cold page loads — that's expected and harmless.
+  useEffect(() => {
+    notificationAudioRef.current = new Audio('/chat-message-sound.mp3')
+    notificationAudioRef.current.volume = 0.5
+    notificationAudioRef.current.play().catch(() => {})
+  }, [])
+
+  /**
+   * Plays the notification chime. Resets playback position so rapid replies
+   * each trigger a fresh sound even if the previous one hasn't finished.
+   */
+  function PlayNotificationSound() {
+    if (!notificationAudioRef.current) return
+    notificationAudioRef.current.currentTime = 0
+    notificationAudioRef.current.play().catch(() => {})
+  }
 
   // Persist sessionId whenever it changes (handles first-render generation)
   useEffect(() => {
@@ -68,6 +101,27 @@ export function ChatWindow() {
     if (errorTimerRef.current !== null) clearTimeout(errorTimerRef.current)
     setError(message)
     errorTimerRef.current = window.setTimeout(() => setError(null), ERROR_AUTO_DISMISS_MS)
+  }
+
+  /**
+   * Two-step clear handler. First call arms the confirmation state; second call
+   * within CLEAR_CONFIRM_TIMEOUT_MS actually wipes the chat.
+   * Clears messages from state and localStorage, and starts a fresh session ID
+   * so the next message begins a new backend conversation.
+   */
+  function HandleClearClick() {
+    if (!confirmingClear) {
+      setConfirmingClear(true)
+      clearTimerRef.current = window.setTimeout(() => setConfirmingClear(false), CLEAR_CONFIRM_TIMEOUT_MS)
+    } else {
+      if (clearTimerRef.current !== null) clearTimeout(clearTimerRef.current)
+      setConfirmingClear(false)
+      const newSessionId = GenerateSessionId()
+      localStorage.setItem(SESSION_ID_KEY, newSessionId)
+      localStorage.removeItem(MESSAGES_KEY)
+      setSessionId(newSessionId)
+      setMessages([])
+    }
   }
 
   /**
@@ -96,6 +150,7 @@ export function ChatWindow() {
         content: response.reply,
       }
       setMessages((prev) => [...prev, botMessage])
+      PlayNotificationSound()
     } catch (err) {
       ShowError(err instanceof Error ? err.message : 'Something went wrong. Please try again.')
     } finally {
@@ -114,16 +169,63 @@ export function ChatWindow() {
   }
 
   return (
-    <div className="flex flex-col h-screen bg-gray-950 text-white">
+    <div className="flex flex-col h-screen bg-gray-50 dark:bg-zinc-950 text-gray-900 dark:text-zinc-100">
 
-      {/* ── Header ── */}
-      <header className="flex-shrink-0 bg-gray-900 border-b border-gray-800">
-        <div className="max-w-3xl mx-auto px-4 py-3.5 flex items-center gap-3">
-          <span className="text-xl">🤖</span>
-          <div>
-            <h1 className="text-sm font-semibold text-white leading-tight">AI Support Chat</h1>
-            <p className="text-xs text-gray-400">Ask me anything</p>
+      {/* ── Header ──
+          Light: shadow lifts the bar off the page without a hard border line.
+          Dark: explicit border since shadows aren't visible on dark backgrounds. */}
+      <header className="flex-shrink-0 bg-white dark:bg-zinc-900 shadow-sm dark:shadow-none dark:border-b dark:border-zinc-800 z-10">
+        <div className="max-w-3xl mx-auto px-4 py-3 flex items-center gap-3">
+          <img
+            src="/technical-support.png"
+            alt="Support bot"
+            className="w-8 h-8 rounded-lg object-cover flex-shrink-0"
+          />
+          <div className="flex-1">
+            <h1 className="text-sm font-semibold leading-tight">AI Support Chat</h1>
+            <p className="text-xs text-gray-500 dark:text-zinc-500">Ask me anything</p>
           </div>
+
+          {/* Clear chat button — only visible when there are messages.
+              First click turns red and shows "Clear?"; second click confirms. */}
+          {messages.length > 0 && (
+            <button
+              onClick={HandleClearClick}
+              title={confirmingClear ? 'Click again to confirm' : 'Clear chat'}
+              className={`flex items-center gap-1.5 text-xs px-2.5 py-1.5 rounded-lg transition-colors duration-150 cursor-pointer ${
+                confirmingClear
+                  ? 'text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-950/40'
+                  : 'text-gray-400 dark:text-zinc-500 hover:text-gray-600 dark:hover:text-zinc-300 hover:bg-gray-100 dark:hover:bg-zinc-800'
+              }`}
+            >
+              {/* Trash / bin SVG icon */}
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                className="w-3.5 h-3.5"
+              >
+                <polyline points="3 6 5 6 21 6" />
+                <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
+                <path d="M10 11v6" />
+                <path d="M14 11v6" />
+                <path d="M9 6V4h6v2" />
+              </svg>
+              {confirmingClear && <span>Clear?</span>}
+            </button>
+          )}
+
+          <button
+            onClick={onToggleTheme}
+            title={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
+            className="text-lg leading-none hover:scale-110 transition-transform cursor-pointer"
+          >
+            {isDark ? '☀️' : '🌙'}
+          </button>
         </div>
       </header>
 
@@ -131,13 +233,15 @@ export function ChatWindow() {
       <main className="flex-1 overflow-y-auto">
         <div className="max-w-3xl mx-auto px-4 py-6">
 
-          {/* Empty state */}
-          {messages.length === 0 && !isLoading && (
-            <div className="flex flex-col items-center justify-center h-64 text-gray-600 gap-2 select-none">
-              <span className="text-4xl">💬</span>
-              <p className="text-sm">Send a message to start the conversation.</p>
+          {/* Welcome message — always shown as the first item in the conversation */}
+          <div className="flex items-start gap-2.5 mb-4">
+            <div className="flex-shrink-0 w-7 h-7 rounded-full overflow-hidden mt-0.5">
+              <img src="/technical-support.png" alt="Bot" className="w-full h-full object-cover" />
             </div>
-          )}
+            <div className="bg-white dark:bg-zinc-800 border border-gray-200 dark:border-zinc-700 shadow-sm text-gray-800 dark:text-zinc-100 px-4 py-2.5 rounded-2xl rounded-tl-sm text-sm leading-relaxed max-w-[85%]">
+              👋 Hi there! I'm your AI support assistant. I can help you troubleshoot issues, answer questions about our products and services, and guide you step by step. What can I help you with today?
+            </div>
+          </div>
 
           {/* Conversation */}
           {messages.map((message) => (
@@ -152,13 +256,13 @@ export function ChatWindow() {
           {/* Bot typing indicator */}
           {isLoading && (
             <div className="flex items-start gap-2.5 mb-4">
-              <div className="flex-shrink-0 w-7 h-7 rounded-full bg-indigo-900 flex items-center justify-center text-sm">
-                🤖
+              <div className="flex-shrink-0 w-7 h-7 rounded-full overflow-hidden">
+                <img src="/technical-support.png" alt="Bot" className="w-full h-full object-cover" />
               </div>
-              <div className="bg-gray-800 px-4 py-3.5 rounded-2xl rounded-tl-sm flex gap-1 items-center">
-                <span className="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce [animation-delay:0ms]" />
-                <span className="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce [animation-delay:150ms]" />
-                <span className="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce [animation-delay:300ms]" />
+              <div className="bg-white dark:bg-zinc-800 border border-gray-200 dark:border-zinc-700 shadow-sm px-4 py-3.5 rounded-2xl rounded-tl-sm flex gap-1 items-center">
+                <span className="w-1.5 h-1.5 bg-gray-400 dark:bg-zinc-500 rounded-full animate-bounce [animation-delay:0ms]" />
+                <span className="w-1.5 h-1.5 bg-gray-400 dark:bg-zinc-500 rounded-full animate-bounce [animation-delay:150ms]" />
+                <span className="w-1.5 h-1.5 bg-gray-400 dark:bg-zinc-500 rounded-full animate-bounce [animation-delay:300ms]" />
               </div>
             </div>
           )}
@@ -170,33 +274,38 @@ export function ChatWindow() {
 
       {/* ── Error banner ── */}
       {error && (
-        <div className="flex-shrink-0 bg-red-950 border-t border-red-900">
-          <div className="max-w-3xl mx-auto px-4 py-2.5 text-red-300 text-sm flex items-center gap-2">
+        <div className="flex-shrink-0 bg-red-50 dark:bg-red-950 border-t border-red-200 dark:border-red-900">
+          <div className="max-w-3xl mx-auto px-4 py-2.5 text-red-600 dark:text-red-300 text-sm flex items-center gap-2">
             <span>⚠️</span>
             <span>{error}</span>
           </div>
         </div>
       )}
 
-      {/* ── Input area ── */}
-      <footer className="flex-shrink-0 bg-gray-900 border-t border-gray-800">
-        <div className="max-w-3xl mx-auto px-4 py-3 flex gap-2 items-end">
-          <textarea
-            className="flex-1 bg-gray-800 text-white placeholder-gray-500 text-sm px-3.5 py-2.5 rounded-xl border border-gray-700 focus:outline-none focus:border-indigo-500 resize-none leading-relaxed"
-            placeholder="Type a message… (Enter to send, Shift+Enter for new line)"
-            rows={2}
-            value={inputText}
-            onChange={(e) => setInputText(e.target.value)}
-            onKeyDown={HandleKeyDown}
-            disabled={isLoading}
-          />
-          <button
-            onClick={HandleSend}
-            disabled={isLoading || !inputText.trim()}
-            className="flex-shrink-0 bg-indigo-600 hover:bg-indigo-500 disabled:bg-gray-700 disabled:cursor-not-allowed text-white text-sm font-medium px-4 py-2.5 rounded-xl transition-colors duration-150"
-          >
-            Send
-          </button>
+      {/* ── Input area ──
+          Light: footer bg matches the page (gray-50) so the input box looks like
+          a floating card rather than a plain bar stuck to the bottom.
+          Dark: matches the dark page bg (zinc-950). */}
+      <footer className="flex-shrink-0 bg-gray-50 dark:bg-zinc-950 border-t border-gray-200 dark:border-zinc-800 px-4 py-3">
+        <div className="max-w-3xl mx-auto">
+          <div className="flex gap-2 items-center bg-white dark:bg-zinc-800 rounded-2xl border border-gray-200 dark:border-zinc-700 shadow-sm px-3.5 py-2">
+            <textarea
+              className="flex-1 bg-transparent text-gray-900 dark:text-zinc-100 placeholder-gray-400 dark:placeholder-zinc-500 text-sm py-1 focus:outline-none resize-none leading-relaxed"
+              placeholder="Type a message… (Enter to send, Shift+Enter for new line)"
+              rows={2}
+              value={inputText}
+              onChange={(e) => setInputText(e.target.value)}
+              onKeyDown={HandleKeyDown}
+              disabled={isLoading}
+            />
+            <button
+              onClick={HandleSend}
+              disabled={isLoading || !inputText.trim()}
+              className="flex-shrink-0 bg-indigo-600 hover:bg-indigo-700 dark:bg-blue-600 dark:hover:bg-blue-700 disabled:bg-gray-200 dark:disabled:bg-zinc-700 disabled:text-gray-400 dark:disabled:text-zinc-500 disabled:cursor-not-allowed text-white text-sm font-medium px-4 py-2 rounded-xl transition-colors duration-150"
+            >
+              Send
+            </button>
+          </div>
         </div>
       </footer>
 

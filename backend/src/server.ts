@@ -8,6 +8,7 @@ import { env } from "./config/env";
 import { ConnectToDatabase } from "./config/database";
 import { chatRouter } from "./routes/chatRoutes";
 import { feedbackRouter } from "./routes/feedbackRoutes";
+import { adminRouter } from "./routes/adminRoutes";
 import { errorHandler } from "./middleware/errorHandler";
 
 const app = express();
@@ -25,6 +26,8 @@ app.get("/health", (_req, res) => {
 app.use("/api/chat", chatRouter);
 
 app.use("/api/feedback", feedbackRouter);
+
+app.use("/api/admin", adminRouter);
 
 // --- Error handler — must be last ---
 app.use(errorHandler);

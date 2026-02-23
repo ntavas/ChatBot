@@ -1,3 +1,6 @@
 /* index.css */
 /* Tailwind CSS v4 — single import replaces the three legacy @tailwind directives. */
+/* Override the default media-query dark mode with class-based toggling.          */
+/* The 'dark' class is applied to <html> by App.tsx.                              */
 @import "tailwindcss";
+@variant dark (&:where(.dark, .dark *));

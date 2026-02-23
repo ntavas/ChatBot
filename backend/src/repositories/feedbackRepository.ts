@@ -31,3 +31,18 @@ export async function SaveFeedback(
 export async function GetNegativeFeedback() {
   return FeedbackModel.find({ vote: "down" }).sort({ createdAt: -1 }).lean();
 }
+
+/**
+ * Saves an admin-supplied correction onto an existing feedback document.
+ * The correction is later injected into the system prompt alongside the bad answer.
+ *
+ * @param messageId - The messageId of the thumbed-down bot message.
+ * @param correction - The corrected answer text supplied by the admin.
+ * @throws Error if no matching document is found or the update fails.
+ */
+export async function SaveCorrection(messageId: string, correction: string): Promise<void> {
+  await FeedbackModel.findOneAndUpdate(
+    { messageId },
+    { $set: { correction } }
+  );
+}

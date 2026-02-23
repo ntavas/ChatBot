@@ -44,6 +44,9 @@ export class OpenRouterProvider implements AIProvider {
     const result = await this.client.chat.completions.create({
       model: env.OPENROUTER_MODEL,
       messages: formattedMessages,
+      // Temperature 0 = deterministic output: same prompt → same answer every time.
+      // This makes the feedback loop demonstrable — the only variable is the system prompt.
+      temperature: 0,
     });
 
     const reply = result.choices[0]?.message?.content;

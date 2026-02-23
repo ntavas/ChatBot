@@ -2,7 +2,7 @@
 // All fetch calls to the backend API.
 // Both functions throw a descriptive Error on failure so callers can display it in the UI.
 
-import type { FeedbackVote, SendMessageResponse } from '../types'
+import type { AdminFeedbackEntry, FeedbackVote, SendMessageResponse } from '../types'
 
 const BASE_URL = '/api'
 
@@ -31,6 +31,46 @@ export async function SendMessage(
   }
 
   return data as SendMessageResponse
+}
+
+/**
+ * Fetches all thumbs-down feedback entries enriched with the triggering
+ * user question and bad bot reply, for display in the admin panel.
+ *
+ * @returns Array of AdminFeedbackEntry objects, newest first.
+ * @throws Error if the request fails.
+ */
+export async function GetAdminFeedback(): Promise<AdminFeedbackEntry[]> {
+  const response = await fetch(`${BASE_URL}/admin/feedback`)
+
+  const data = await response.json()
+
+  if (!response.ok) {
+    throw new Error((data as { error?: string }).error ?? 'Failed to load admin feedback.')
+  }
+
+  return data as AdminFeedbackEntry[]
+}
+
+/**
+ * Saves an admin-supplied correction for a thumbs-down bot message.
+ * The correction will be injected into the system prompt on the next chat request.
+ *
+ * @param messageId - The messageId of the thumbed-down bot reply.
+ * @param correction - The corrected answer text.
+ * @throws Error if the submission fails.
+ */
+export async function SubmitCorrection(messageId: string, correction: string): Promise<void> {
+  const response = await fetch(`${BASE_URL}/admin/feedback/${messageId}/correct`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ correction }),
+  })
+
+  if (!response.ok) {
+    const data = await response.json().catch(() => ({}))
+    throw new Error((data as { error?: string }).error ?? 'Failed to save correction.')
+  }
 }
 
 /**

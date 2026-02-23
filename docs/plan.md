@@ -90,10 +90,10 @@ Work through phases in order — do not skip ahead.
 ## Phase 5 — Feedback Loop (The Thesis Feature)
 > Goal: Negative feedback influences the bot's future responses.
 
-- [ ] In `chatService.ts`, add `BuildSystemPrompt()` function
-  - [ ] Fetches recent thumbs-down feedback from MongoDB
-  - [ ] Injects bad examples into the system prompt as negative few-shot examples
-- [ ] Update `ProcessUserMessage()` to use `BuildSystemPrompt()` on every request
+- [x] In `chatService.ts`, add `BuildSystemPrompt()` function
+  - [x] Fetches recent thumbs-down feedback from MongoDB
+  - [x] Injects bad examples into the system prompt as negative few-shot examples
+- [x] Update `ProcessUserMessage()` to use `BuildSystemPrompt()` on every request
 - [ ] Verify: After submitting 👎 on a response, the same question gets a different answer
 
 ---
@@ -101,11 +101,11 @@ Work through phases in order — do not skip ahead.
 ## Phase 6 — Polish & Demo Prep
 > Goal: Project looks clean and is ready to show.
 
-- [ ] Add loading spinner in the frontend while waiting for bot reply
-- [ ] Handle errors gracefully in the UI (network error, API error)
-- [ ] Add a simple session ID stored in `localStorage` so the conversation persists on refresh
-- [ ] Write a `README.md` with setup instructions and how to run with Docker
-- [ ] Clean up any leftover `console.log` debug statements
+- [x] Add loading spinner in the frontend while waiting for bot reply
+- [x] Handle errors gracefully in the UI (network error, API error)
+- [x] Add a simple session ID stored in `localStorage` so the conversation persists on refresh
+- [x] Write a `README.md` with setup instructions and how to run with Docker
+- [ ] Clean up any leftover `console.log` debug statements — skipped by design (kept for demo)
 - [ ] Final test: fresh `docker-compose up` from scratch, full flow works end to end
 
 ---
@@ -113,7 +113,7 @@ Work through phases in order — do not skip ahead.
 ## Nice to Have (If Time Permits)
 > Do NOT start these until Phase 6 is complete.
 
-- [ ] Simple admin page that lists all thumbs-down feedback entries
-- [ ] Ability to manually correct a bad answer from the admin page
+- [x] Simple admin page that lists all thumbs-down feedback entries
+- [x] Ability to manually correct a bad answer from the admin page
 - [ ] Typing indicator ("bot is typing...") animation in the chat UI
 - [ ] Switch `OPENROUTER_MODEL` to a more capable model for the final demo

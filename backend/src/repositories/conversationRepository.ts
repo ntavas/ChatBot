@@ -49,3 +49,20 @@ export async function SaveMessage(sessionId: string, message: Message): Promise<
 export async function CreateSession(sessionId: string): Promise<void> {
   await ConversationModel.create({ sessionId, messages: [] });
 }
+
+/**
+ * Returns the Message objects matching any of the given messageIds, across all sessions.
+ * Uses a single aggregation pipeline so the lookup is one DB call regardless of how many IDs are passed.
+ *
+ * @param messageIds - Array of messageId strings to look up.
+ * @returns Flat array of matching Message objects in MongoDB's natural traversal order.
+ * @throws Error if the MongoDB aggregation fails.
+ */
+export async function GetMessagesByIds(messageIds: string[]): Promise<Message[]> {
+  const results = await ConversationModel.aggregate([
+    { $unwind: "$messages" },
+    { $match: { "messages.messageId": { $in: messageIds } } },
+    { $replaceRoot: { newRoot: "$messages" } },
+  ]);
+  return results as Message[];
+}

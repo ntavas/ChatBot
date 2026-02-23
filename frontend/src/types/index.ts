@@ -23,3 +23,17 @@ export interface SendMessageResponse {
   reply: string
   messageId: string
 }
+
+/** A thumbs-down entry enriched with context, returned by GET /api/admin/feedback */
+export interface AdminFeedbackEntry {
+  messageId: string
+  sessionId: string
+  /** ISO date string from JSON serialization */
+  createdAt: string
+  /** Admin-supplied correction. Null until saved. */
+  correction: string | null
+  /** The bad bot reply that was thumbed down. */
+  botMessage: string | null
+  /** The user message immediately before the bad bot reply. */
+  userQuestion: string | null
+}

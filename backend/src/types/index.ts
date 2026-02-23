@@ -48,3 +48,19 @@ export interface FeedbackRequest {
   sessionId: string;
   vote: FeedbackVote;
 }
+
+/**
+ * A thumbs-down feedback entry enriched with the bot message and the
+ * user question that triggered it, for display in the admin panel.
+ */
+export interface AdminFeedbackEntry {
+  messageId: string;
+  sessionId: string;
+  createdAt: Date;
+  /** Admin-supplied correction. Null until a correction is saved. */
+  correction: string | null;
+  /** The bad bot reply that was thumbed down. */
+  botMessage: string | null;
+  /** The user message immediately before the bad bot reply. */
+  userQuestion: string | null;
+}

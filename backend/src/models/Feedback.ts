@@ -9,6 +9,8 @@ export interface FeedbackDocument extends Document {
   messageId: string;
   sessionId: string;
   vote: "up" | "down";
+  /** Admin-supplied correction for the bad bot answer. Null until a correction is saved. */
+  correction?: string | null;
   createdAt: Date;
 }
 
@@ -17,6 +19,7 @@ const FeedbackSchema = new Schema<FeedbackDocument>(
     messageId: { type: String, required: true },
     sessionId: { type: String, required: true },
     vote: { type: String, enum: ["up", "down"], required: true },
+    correction: { type: String, default: null },
   },
   { timestamps: true } // Mongoose auto-manages createdAt (updatedAt not needed for feedback)
 );
