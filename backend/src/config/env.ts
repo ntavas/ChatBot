@@ -4,8 +4,14 @@
 // app fails fast at startup rather than at runtime.
 
 import dotenv from "dotenv";
+import path from "path";
 
-dotenv.config();
+// Φορτώνουμε το .env αρχείο.
+// Ψάχνουμε σε δύο τοποθεσίες ώστε να λειτουργεί τόσο μέσω Docker (CWD = project root)
+// όσο και όταν τρέχουμε scripts απευθείας από τον φάκελο backend/ (π.χ. ts-node scripts).
+// Το dotenv δεν αντικαθιστά μεταβλητές που έχουν ήδη οριστεί, οπότε η σειρά είναι ασφαλής.
+dotenv.config({ path: path.resolve(__dirname, "../../../.env") }); // project root
+dotenv.config(); // fallback: CWD (καλύπτει την περίπτωση Docker όπου CWD = project root)
 
 const VALID_AI_PROVIDERS = ["gemini", "openai", "openrouter"] as const;
 type AIProviderName = typeof VALID_AI_PROVIDERS[number];

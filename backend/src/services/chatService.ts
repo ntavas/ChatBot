@@ -1,81 +1,71 @@
 // chatService.ts
-// Orchestrates the full chat flow: loading history, calling the AI provider,
-// saving messages, and returning the response to the route layer.
+// Ενορχηστρώνει ολόκληρη τη ροή του chat: RAG αναζήτηση → κατασκευή prompt →
+// κλήση AI provider → αποθήκευση → επιστροφή απάντησης.
 
 import { v4 as uuidv4 } from "uuid";
 import { GetAIProvider } from "../config/aiProviderFactory";
 import * as conversationRepository from "../repositories/conversationRepository";
 import * as feedbackRepository from "../repositories/feedbackRepository";
+import { FindRelevantDocs, BuildRAGContext } from "./ragService";
 import { Message, ChatResponse } from "../types/index";
 
-// The base instruction given to the AI on every request.
-const DEFAULT_SYSTEM_PROMPT = `You are a customer support assistant for ShopEasy, an online retail e-shop.
-Answer questions clearly and concisely, based only on the information provided to you below.
-If a customer asks about something not covered in your knowledge base, say "I don't have that information — please contact us at support@shopeasy.com."
-Do not guess, invent details, or discuss topics unrelated to ShopEasy.`;
-
-// Factual knowledge base for ShopEasy — the single source of truth the bot may draw from.
-// All answers must be grounded in this content; nothing should be invented beyond it.
-const SHOPEASY_KNOWLEDGE_BASE = `## ShopEasy Knowledge Base
-
-**About ShopEasy**
-ShopEasy is an online retail e-shop offering a wide range of products delivered directly to your door.
-
-**Return Policy**
-Customers may return or exchange any item within 30 days of purchase.
-The item must be in its original condition with all original packaging and tags intact.
-To initiate a return, contact us at support@shopeasy.com to receive a Return Merchandise Authorization (RMA) number along with return instructions.
-Personalized or customized products are not eligible for return.
-
-**Shipping**
-Standard delivery takes 3–5 business days.
-Shipping is free on all orders over €50. Orders below €50 are subject to a standard shipping fee.
-
-**Payment Methods**
-We accept credit card, PayPal, and bank transfer.
-
-**Contact**
-Email: support@shopeasy.com
-Our support team is available Monday–Friday, 9:00–17:00.`;
-
 // Cap how many negative examples we inject — guards against token bloat if thumbs-downs accumulate.
-const MAX_NEGATIVE_EXAMPLES = 10;
+const MAX_NEGATIVE_EXAMPLES = 5;
 
 /**
- * Builds the system prompt for each request by appending recent negative feedback examples
- * to the base prompt, so the AI actively avoids response patterns users found unhelpful.
+ * BuildSystemPrompt: Κατασκευάζει δυναμικά το system prompt για κάθε request.
  *
- * @returns The full system prompt string, with negative examples appended if any exist.
- * @throws Error if the database queries fail.
+ * Γιατί είναι δυναμικό:
+ *   Αντί για ένα σταθερό κείμενο, το prompt αλλάζει σε κάθε request ανάλογα με:
+ *   1. Ποια πληροφορία από τη γνωσιακή βάση είναι σχετική με την ερώτηση (RAG context)
+ *   2. Ποιες απαντήσεις έχουν αξιολογηθεί αρνητικά (feedback loop)
+ *   Έτσι ο bot απαντά πάντα με τη σωστή πληροφορία και αποφεύγει παλιά λάθη.
+ *
+ * @param ragContext - Το κείμενο από τα σχετικά έγγραφα της γνωσιακής βάσης
+ * @returns Το πλήρες system prompt ως string
  */
-async function BuildSystemPrompt(): Promise<string> {
+async function BuildSystemPrompt(ragContext: string): Promise<string> {
+  // ── Βασικές οδηγίες συμπεριφοράς ──────────────────────────────────────────
+  const baseInstructions = `Είσαι ο ψηφιακός βοηθός υποστήριξης του ShopEasy, ενός online e-shop.
+Απάντα μόνο με βάση τις πληροφορίες που σου δίνονται παρακάτω.
+Απάντα στη γλώσσα που χρησιμοποιεί ο χρήστης (Ελληνικά ή Αγγλικά).
+Μην εφευρίσκεις πληροφορίες που δεν υπάρχουν στο κείμενο.`;
+
+  // ── Ενότητα RAG context ────────────────────────────────────────────────────
+  // Αν δεν βρέθηκαν σχετικά έγγραφα, ο bot παραπέμπει σε human agent.
+  const knowledgeSection = ragContext
+    ? `ΠΛΗΡΟΦΟΡΙΕΣ ΑΠΟ ΤΗ ΓΝΩΣΙΑΚΗ ΒΑΣΗ:
+${ragContext}`
+    : `ΠΛΗΡΟΦΟΡΙΕΣ ΑΠΟ ΤΗ ΓΝΩΣΙΑΚΗ ΒΑΣΗ:
+Δεν βρέθηκαν σχετικές πληροφορίες για αυτήν την ερώτηση.`;
+
+  // ── Κανόνες απάντησης ──────────────────────────────────────────────────────
+  const rules = `ΚΑΝΟΝΕΣ:
+- Απάντα ΜΟΝΟ με βάση τις παραπάνω πληροφορίες
+- Αν δεν υπάρχουν σχετικές πληροφορίες, πες: "Θα σε συνδέσω με έναν εκπρόσωπο υποστήριξης. Επικοινώνησε μαζί μας στο support@shopeasy.com"
+- Μην αναφέρεις ότι διαβάζεις από κάποιο έγγραφο ή βάση δεδομένων
+- Απάντα φιλικά και επαγγελματικά`;
+
+  const basePrompt = `${baseInstructions}\n\n${knowledgeSection}\n\n${rules}`;
+
+  // ── Ενότητα feedback (αρνητικά παραδείγματα) ──────────────────────────────
+  // Φέρνουμε τα πιο πρόσφατα αρνητικά feedbacks για να τα αποφύγει ο bot
   const negativeFeedback = await feedbackRepository.GetNegativeFeedback();
 
-  const basePrompt = `${DEFAULT_SYSTEM_PROMPT}\n\n${SHOPEASY_KNOWLEDGE_BASE}`;
-
-  // No thumbs-downs yet — use base prompt + knowledge base only
   if (negativeFeedback.length === 0) {
-    // TEMP: remove before Phase 6
-    console.log("[BuildSystemPrompt] No negative feedback — using base prompt + knowledge base.");
     return basePrompt;
   }
 
-  // Take only the most recent N to keep the prompt size bounded
   const recentNegatives = negativeFeedback.slice(0, MAX_NEGATIVE_EXAMPLES);
   const messageIds = recentNegatives.map((f) => f.messageId);
-
   const badMessages = await conversationRepository.GetMessagesByIds(messageIds);
-
-  // Defensive filter — feedback should only ever be on assistant messages, but guard anyway
   const badBotReplies = badMessages.filter((m) => m.role === "assistant");
 
   if (badBotReplies.length === 0) {
-    // TEMP: remove before Phase 6
-    console.log("[BuildSystemPrompt] Negative feedback found but no matching messages — using base prompt + knowledge base.");
     return basePrompt;
   }
 
-  // Build a map from messageId → correction so each example can include the admin's fix
+  // Χτίζουμε map από messageId → correction για να συμπεριλάβουμε τις διορθώσεις
   const correctionMap = new Map<string, string | null>();
   for (const f of recentNegatives) {
     correctionMap.set(f.messageId, f.correction ?? null);
@@ -85,38 +75,60 @@ async function BuildSystemPrompt(): Promise<string> {
     .map((m) => {
       const correction = correctionMap.get(m.messageId);
       if (correction) {
-        // When an admin has supplied a correction, tell the model exactly what to say instead
-        return `- Avoid: "${m.content}". Instead say: "${correction}"`;
+        return `- Απέφυγε: "${m.content}". Πες αντί αυτού: "${correction}"`;
       }
-      return `- ${m.content}`;
+      return `- Απέφυγε αυτό το είδος απάντησης: "${m.content}"`;
     })
     .join("\n");
 
   const negativeExamplesSection =
-    `IMPORTANT: Avoid responses like these that users found unhelpful:\n${exampleLines}`;
+    `ΑΠΟΦΥΓΕ ΑΥΤΕΣ ΤΙΣ ΑΠΑΝΤΗΣΕΙΣ (αξιολογήθηκαν αρνητικά από χρήστες):\n${exampleLines}`;
 
-  // TEMP: remove before Phase 6
-  console.log("[BuildSystemPrompt] Injected negative examples:\n", negativeExamplesSection);
   return `${basePrompt}\n\n${negativeExamplesSection}`;
 }
 
 /**
- * Processes an incoming user message through the full chat pipeline:
- * loads history → calls the AI provider → saves both messages → returns the reply.
+ * ProcessUserMessage: Επεξεργάζεται ένα μήνυμα χρήστη μέσα από την πλήρη ροή.
  *
- * @param sessionId - The ID of the existing session, or a newly generated one for first messages.
- * @param userMessage - The raw text the user typed.
- * @returns An object containing the sessionId, the AI's reply text, and the reply's messageId.
- * @throws Error if the AI provider call fails or the database write fails.
+ * Βήματα:
+ *   1. Φόρτωση ιστορικού συνομιλίας
+ *   2. RAG: εύρεση σχετικών εγγράφων από τη γνωσιακή βάση
+ *   3. Κατασκευή δυναμικού system prompt με το RAG context
+ *   4. Κλήση AI provider
+ *   5. Αποθήκευση μηνυμάτων στη MongoDB
+ *   6. Επιστροφή απάντησης
+ *
+ * @param sessionId - ID της συνομιλίας (νέο ή υπάρχον)
+ * @param userMessage - Το κείμενο που έστειλε ο χρήστης
+ * @returns sessionId, απάντηση bot, και messageId της απάντησης
  */
 export async function ProcessUserMessage(
   sessionId: string,
   userMessage: string
 ): Promise<ChatResponse> {
-  // Load existing history — returns [] for brand-new sessions
+  // ── Βήμα 1: Φόρτωση ιστορικού ─────────────────────────────────────────────
+  // Επιστρέφει [] για νέες συνομιλίες — το AI ξεκινά χωρίς context
   const history = await conversationRepository.GetSessionHistory(sessionId);
 
-  // Build the user message object
+  // ── Βήμα 2: RAG — Εύρεση σχετικών εγγράφων ────────────────────────────────
+  // Μετατρέπουμε την ερώτηση σε vector και ψάχνουμε τα πιο σχετικά FAQs
+  const ragResults = await FindRelevantDocs(userMessage);
+  const ragContext = BuildRAGContext(ragResults);
+
+  if (ragResults.length > 0) {
+    console.log(
+      `[ChatService] RAG βρήκε ${ragResults.length} σχετικά έγγραφα:`,
+      ragResults.map((r) => `${r.document.title} (score: ${r.score.toFixed(3)})`)
+    );
+  } else {
+    console.log("[ChatService] RAG: δεν βρέθηκαν σχετικά έγγραφα — ο bot θα παραπέμψει σε agent.");
+  }
+
+  // ── Βήμα 3: Κατασκευή δυναμικού system prompt ─────────────────────────────
+  // Συνδυάζει: βασικές οδηγίες + RAG context + αρνητικά παραδείγματα
+  const systemPrompt = await BuildSystemPrompt(ragContext);
+
+  // ── Βήμα 4: Κλήση AI provider ─────────────────────────────────────────────
   const userMessageObject: Message = {
     messageId: uuidv4(),
     role: "user",
@@ -124,10 +136,9 @@ export async function ProcessUserMessage(
     timestamp: new Date(),
   };
 
-  // OpenAI and Gemini both need the full history on every request — they have no memory of their own
+  // Στέλνουμε ολόκληρο το ιστορικό + το νέο μήνυμα — το AI δεν έχει μνήμη από μόνο του
   const messagesForAI = [...history, userMessageObject];
 
-  const systemPrompt = await BuildSystemPrompt();
   const aiProvider = GetAIProvider();
   let replyText: string;
   try {
@@ -138,7 +149,7 @@ export async function ProcessUserMessage(
     );
   }
 
-  // Build the assistant message object
+  // ── Βήμα 5: Αποθήκευση στη MongoDB ────────────────────────────────────────
   const assistantMessageObject: Message = {
     messageId: uuidv4(),
     role: "assistant",
@@ -146,11 +157,13 @@ export async function ProcessUserMessage(
     timestamp: new Date(),
   };
 
-  // Persist both messages — upsert in SaveMessage handles new session creation automatically
+  // upsert: δημιουργεί νέα συνομιλία αν δεν υπάρχει, ή προσθέτει σε υπάρχουσα
   await conversationRepository.SaveMessage(sessionId, userMessageObject);
   await conversationRepository.SaveMessage(sessionId, assistantMessageObject);
 
-  // Return the assistant's messageId so the frontend can attach feedback votes to it
+  // ── Βήμα 6: Επιστροφή ─────────────────────────────────────────────────────
+  // Επιστρέφουμε το messageId της απάντησης ώστε το frontend να μπορεί να
+  // συνδέσει το feedback (👍/👎) με τη συγκεκριμένη απάντηση
   return {
     sessionId,
     reply: replyText,

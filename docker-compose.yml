@@ -11,6 +11,9 @@ services:
       - mongo
     volumes:
       - ./backend/src:/app/src
+      # Cache για το ML μοντέλο (~80MB) — αποτρέπει επαναλαμβανόμενη λήψη
+      # σε κάθε επανεκκίνηση του container
+      - model_cache:/root/.cache/huggingface
 
   mongo:
     image: mongo:7
@@ -35,3 +38,4 @@ services:
 
 volumes:
   mongo_data:
+  model_cache:

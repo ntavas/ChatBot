@@ -44,110 +44,69 @@ This phase upgrades the chatbot from keyword-based to semantic search.
 
 ### 1.1 Setup Local Embeddings
 
-- [ ] Install `@xenova/transformers` in the backend
+- [x] Install `@xenova/transformers` in the backend
   ```bash
   cd backend && npm install @xenova/transformers
   ```
-- [ ] Create `backend/src/services/embeddingService.js`
-  - [ ] Load model `Xenova/all-MiniLM-L6-v2` (384 dimensions, ~80MB)
-  - [ ] Singleton pattern — load once at startup, reuse everywhere
-  - [ ] Function `getEmbedding(text)` → returns `Float32Array` → `Array`
-  - [ ] Comments explaining: what an embedding is, why 384 numbers, what cosine similarity means
-  - [ ] Optional: cache embeddings in memory (Map) for repeated queries
-- [ ] Test: run `getEmbedding("test")` and verify it returns an array of 384 numbers
-- [ ] 📝 Update README.md: "Added local embedding model (all-MiniLM-L6-v2)"
+- [x] Create `backend/src/services/embeddingService.js`
+  - [x] Load model `Xenova/all-MiniLM-L6-v2` (384 dimensions, ~80MB)
+  - [x] Singleton pattern — load once at startup, reuse everywhere
+  - [x] Function `getEmbedding(text)` → returns `Float32Array` → `Array`
+  - [x] Comments explaining: what an embedding is, why 384 numbers, what cosine similarity means
+  - [x] Optional: cache embeddings in memory (Map) for repeated queries
+  > Note: File is TypeScript (`embeddingService.ts`). Used `new Function('return import(...)')()` trick to avoid TypeScript compiler converting dynamic `import()` to `require()` (which fails for ESM packages in a CommonJS project). Also exports `WarmUp()` for preloading the model at server startup, and `EMBEDDING_DIMENSIONS` constant for reuse in other files.
+- [x] Test: run `getEmbedding("test")` and verify it returns an array of 384 numbers
+- [x] 📝 Update README.md: "Added local embedding model (all-MiniLM-L6-v2)"
 
 ### 1.2 Knowledge Base Collection
 
-- [ ] Create Mongoose model `KnowledgeBase` (`backend/src/models/KnowledgeBase.js`)
-  - [ ] Comments above every field explaining what it stores and why
-  ```
-  {
-    title:      String,     // e.g. "Return Policy"
-    content:    String,     // e.g. "You can return items within 30 days..."
-    category:   String,     // "returns" | "shipping" | "payments" | "products" | "account"
-    embedding:  [Number],   // 384 numbers representing the meaning of the content
-    isActive:   Boolean,    // false = "deleted" without losing the data
-    createdAt:  Date,
-    updatedAt:  Date
-  }
-  ```
-- [ ] Seed script: `backend/src/scripts/seedKnowledge.js`
-  - [ ] Comment at the top: "This script loads initial knowledge into the database. Run once during setup."
-  - [ ] Write 15–25 FAQs/entries for ShopEasy across 5 categories:
-    - Returns & Exchanges (returns)
-    - Shipping & Delivery (shipping)
-    - Payments & Invoicing (payments)
-    - Products & Availability (products)
-    - Account & Registration (account)
-  - [ ] For each FAQ: `getEmbedding(content)` → store together with the embedding
-  - [ ] Run: `node src/scripts/seedKnowledge.js`
+- [x] Create Mongoose model `KnowledgeBase` (`backend/src/models/KnowledgeBase.ts`)
+  - [x] Comments above every field explaining what it stores and why
+  > Note: File is TypeScript. Added a text index on `content`+`title` for the Atlas fallback in 1.6, and a compound index on `category`+`isActive` for admin filtering. Embedding validated to be exactly 384 dimensions at the schema level.
+- [x] Seed script: `backend/src/scripts/seedKnowledge.ts`
+  - [x] Comment at the top: "This script loads initial knowledge into the database. Run once during setup."
+  - [x] Write 15–25 FAQs/entries for ShopEasy across 5 categories (25 total, 5 per category):
+    - Returns & Exchanges (returns) — 5 entries
+    - Shipping & Delivery (shipping) — 5 entries
+    - Payments & Invoicing (payments) — 5 entries
+    - Products & Availability (products) — 5 entries
+    - Account & Registration (account) — 5 entries
+  - [x] For each FAQ: `GetEmbedding(content)` → store together with the embedding
+  - [ ] Run: `npx ts-node --transpile-only src/scripts/seedKnowledge.ts`
 - [ ] 📝 Update README.md: instructions for running the seed script
 
 ### 1.3 MongoDB Atlas Vector Search Index
 
-- [ ] Switch to **MongoDB Atlas Free Tier (M0)** if running local MongoDB
-  - Alternative: local MongoDB for development, Atlas only for demo
-  - **NOTE:** `$vectorSearch` only works on Atlas, not on local MongoDB
-- [ ] Create Vector Search Index in the Atlas UI:
-  - Database → Collection `knowledge_base` → Search Indexes → Create
-  - Name: `vector_index`
-  - Config:
-    ```json
-    {
-      "fields": [{
-        "type": "vector",
-        "path": "embedding",
-        "numDimensions": 384,
-        "similarity": "cosine"
-      }]
-    }
-    ```
-- [ ] Update `.env` with Atlas connection string
-- [ ] Update `.env.example` with placeholder for Atlas URI
+- [x] Switch to **MongoDB Atlas Free Tier (M0)** if running local MongoDB
+- [x] Create Vector Search Index in the Atlas UI:
+  - Collection `knowledgebases` → Atlas Search → Create Search Index → JSON Editor
+  - Name: `vector_index`, numDimensions: 384, similarity: cosine
+  > Note: Mongoose pluralises the model name to `knowledgebases`, not `knowledge_base` as originally planned.
+- [x] Update `.env` with Atlas connection string
+- [x] Update `.env.example` with placeholder for Atlas URI
 - [ ] 📝 Update README.md: steps to set up the Atlas index
 
 ### 1.4 RAG Search Service
 
-- [ ] Create `backend/src/services/ragService.js`
-  - [ ] File comment: "This service is the 'smart search' of the system. It takes the user's question and finds the most relevant information from the knowledge base."
-  - [ ] Function `findRelevantDocs(userMessage, limit=3)`:
-    1. `getEmbedding(userMessage)` — convert question to a vector
+- [x] Create `backend/src/services/ragService.ts`
+  - [x] File comment: "This service is the 'smart search' of the system."
+  - [x] Function `FindRelevantDocs(userMessage, limit=3)`:
+    1. `GetEmbedding(userMessage)` — convert question to a vector
     2. `$vectorSearch` aggregation pipeline — search for similar documents
-    3. Return top-N documents with score
-  - [ ] Function `buildRAGContext(docs)` — converts docs into a formatted string for the prompt
-  - [ ] Comments on every pipeline step explaining what happens
-- [ ] Test: ask "can I return what I bought?" → should find the returns FAQ
+    3. Return top-N documents with score (filtered by MIN_SIMILARITY_SCORE = 0.5)
+  - [x] Function `BuildRAGContext(docs)` — converts docs into a formatted string for the prompt
+  - [x] Comments on every pipeline step explaining what happens
+  - [x] Auto-detects Atlas vs local via URI prefix and uses the correct search method
+- [ ] Test: ask "can I return what I bought?" → should find the returns FAQ (tested in 1.5)
 - [ ] 📝 Update README.md: plain-language explanation of RAG (1 paragraph)
 
 ### 1.5 Integration into chatService
 
-- [ ] Modify `backend/src/services/chatService.js`
-  - [ ] Comment above every step of the flow:
-  ```
-  // Step 1: Find relevant information from the knowledge base
-  User message → ragService.findRelevantDocs(message)
-
-  // Step 2: Build the prompt with the information and rules
-  → buildSystemPrompt(ragDocs, feedbackRules)
-
-  // Step 3: Send to the AI and receive the response
-  → AI provider call
-
-  // Step 4: Save and return
-  → save conversation → return response
-  ```
-- [ ] The system prompt becomes dynamic:
-  ```
-  You are the digital assistant of ShopEasy.
-
-  INFORMATION FROM THE KNOWLEDGE BASE:
-  {ragContext}
-
-  RULES:
-  - Answer ONLY based on the above information
-  - If no relevant information exists, say: "I'll connect you with a human agent"
-  ```
+- [x] Modify `backend/src/services/chatService.ts`
+  - [x] 6-step flow with comments: history → RAG → build prompt → AI call → save → return
+  - [x] Dynamic system prompt: base instructions + RAG context + negative feedback examples
+  - [x] Removed hardcoded SHOPEASY_KNOWLEDGE_BASE — replaced entirely with RAG
+  - [x] Logs which documents RAG found (title + score) for each request
 
 ### 1.6 Fallback: Local MongoDB (without Atlas)
 
