@@ -12,7 +12,7 @@ Built with Node.js, React, MongoDB, and a swappable AI provider backend (OpenRou
 - **Thumbs up / down feedback** — users can rate any bot response
 - **Feedback loop** — thumbs-down votes are injected into the system prompt as negative examples, steering future responses away from unhelpful patterns
 - **Swappable AI provider** — switch between OpenRouter, Gemini, or OpenAI via a single environment variable
-- **Local embedding model** — uses `all-MiniLM-L6-v2` (via `@xenova/transformers`) to convert text into 384-dimension vectors locally, with no cloud API required; enables semantic similarity search for the RAG pipeline
+- **Local multilingual embedding model** — uses `paraphrase-multilingual-MiniLM-L12-v2` (via `@xenova/transformers`) to convert text into 384-dimension vectors locally, with no cloud API required; supports 50+ languages (Greek, English, etc.) with cross-lingual semantic search — e.g. an English question matches a Greek FAQ entry
 - **RAG (Retrieval-Augmented Generation)** — before every reply, the bot converts the user's question into a vector and searches the knowledge base for the 3 most semantically similar entries; only the relevant information is injected into the prompt, keeping answers focused and accurate
 
 ---

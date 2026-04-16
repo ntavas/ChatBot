@@ -7,11 +7,16 @@ import dotenv from "dotenv";
 import path from "path";
 
 // Φορτώνουμε το .env αρχείο.
-// Ψάχνουμε σε δύο τοποθεσίες ώστε να λειτουργεί τόσο μέσω Docker (CWD = project root)
-// όσο και όταν τρέχουμε scripts απευθείας από τον φάκελο backend/ (π.χ. ts-node scripts).
-// Το dotenv δεν αντικαθιστά μεταβλητές που έχουν ήδη οριστεί, οπότε η σειρά είναι ασφαλής.
-dotenv.config({ path: path.resolve(__dirname, "../../../.env") }); // project root
-dotenv.config(); // fallback: CWD (καλύπτει την περίπτωση Docker όπου CWD = project root)
+// Δοκιμάζουμε τρεις τοποθεσίες με σειρά προτεραιότητας:
+//   1. /app/.env         — Docker container root (CWD μέσα στο container)
+//   2. project-root/.env — όταν τρέχουμε ts-node-dev απευθείας από τον φάκελο backend/
+//                          (__dirname = backend/src/config, οπότε ../../../ = project root)
+//   3. CWD/.env          — γενικό fallback
+// Το dotenv δεν αντικαθιστά μεταβλητές που έχουν ήδη οριστεί (π.χ. από docker-compose env_file),
+// οπότε η σειρά είναι ασφαλής.
+dotenv.config({ path: "/app/.env" });                                          // Docker: CWD
+dotenv.config({ path: path.resolve(__dirname, "../../../.env") });             // local dev: project root
+dotenv.config();                                                               // fallback
 
 const VALID_AI_PROVIDERS = ["gemini", "openai", "openrouter"] as const;
 type AIProviderName = typeof VALID_AI_PROVIDERS[number];

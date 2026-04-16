@@ -178,17 +178,17 @@ export async function FindRelevantDocs(
   try {
     if (IsAtlas()) {
       // MongoDB Atlas: χρήση vector similarity search
-      console.log(`[RAGService] Vector search για: "${userMessage.slice(0, 50)}..."`);
+      console.log(`[RAGService] Vector search for: "${userMessage.slice(0, 50)}..."`);
       return await FindRelevantDocsVectorSearch(userMessage, limit);
     } else {
       // Local MongoDB: fallback σε keyword search
-      console.log(`[RAGService] Text search (fallback) για: "${userMessage.slice(0, 50)}..."`);
+      console.log(`[RAGService] Text search (fallback) for: "${userMessage.slice(0, 50)}..."`);
       return await FindRelevantDocsTextSearch(userMessage, limit);
     }
   } catch (error) {
     // Αν αποτύχει η αναζήτηση, επιστρέφουμε κενό array αντί να κρασάρει το σύστημα.
     // Ο bot θα απαντήσει χωρίς context — λιγότερο καλό αλλά δεν πέφτει το σύστημα.
-    console.error("[RAGService] Σφάλμα κατά την αναζήτηση:", error);
+    console.error("[RAGService] Search error:", error);
     return [];
   }
 }

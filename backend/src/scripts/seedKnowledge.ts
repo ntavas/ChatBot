@@ -218,14 +218,14 @@ async function SeedKnowledge(): Promise<void> {
 
   // Σύνδεση στη βάση δεδομένων
   await ConnectToDatabase();
-  console.log("\n✓ Σύνδεση στη MongoDB επιτυχής\n");
+  console.log("\n✓ Connected to MongoDB\n");
 
   // Διαγραφή παλαιών καταχωρίσεων για καθαρή εισαγωγή
   const deleted = await KnowledgeBaseModel.deleteMany({});
-  console.log(`✓ Διαγράφηκαν ${deleted.deletedCount} παλαιές καταχωρίσεις\n`);
+  console.log(`✓ Deleted ${deleted.deletedCount} existing entries\n`);
 
-  console.log(`Επεξεργασία ${FAQ_ENTRIES.length} FAQs...`);
-  console.log("(Η πρώτη εκτέλεση φορτώνει το μοντέλο ~80MB — παρακαλώ περιμένετε)\n");
+  console.log(`Processing ${FAQ_ENTRIES.length} FAQs...`);
+  console.log("(First run downloads the model ~80MB — please wait)\n");
 
   // Υπολογισμός embeddings και εισαγωγή — ένα-ένα για να φαίνεται η πρόοδος
   for (let i = 0; i < FAQ_ENTRIES.length; i++) {
@@ -247,30 +247,30 @@ async function SeedKnowledge(): Promise<void> {
 
       console.log(`${progress} ✓ [${entry.category}] ${entry.title}`);
     } catch (error) {
-      console.error(`${progress} ✗ Σφάλμα για "${entry.title}":`, error);
+      console.error(`${progress} ✗ Error for "${entry.title}":`, error);
     }
   }
 
   // Σύνοψη ανά κατηγορία
   console.log("\n" + "─".repeat(60));
-  console.log("Σύνοψη ανά κατηγορία:");
+  console.log("Summary by category:");
   const categories: KnowledgeCategory[] = ["returns", "shipping", "payments", "products", "account"];
   for (const cat of categories) {
     const count = await KnowledgeBaseModel.countDocuments({ category: cat, isActive: true });
-    console.log(`  ${cat.padEnd(12)}: ${count} καταχωρίσεις`);
+    console.log(`  ${cat.padEnd(12)}: ${count} entries`);
   }
 
   const total = await KnowledgeBaseModel.countDocuments({ isActive: true });
   console.log("─".repeat(60));
-  console.log(`  ΣΥΝΟΛΟ     : ${total} καταχωρίσεις`);
+  console.log(`  TOTAL      : ${total} entries`);
   console.log("=".repeat(60));
-  console.log("✓ Seed ολοκληρώθηκε επιτυχώς!");
+  console.log("✓ Seed completed successfully!");
 }
 
 // Εκτέλεση και τερματισμός
 SeedKnowledge()
   .then(() => mongoose.disconnect())
   .catch((error) => {
-    console.error("Κρίσιμο σφάλμα κατά το seed:", error);
+    console.error("Critical seed error:", error);
     process.exit(1);
   });

@@ -2,8 +2,9 @@
  * embeddingService.ts
  *
  * Τι κάνει αυτό το αρχείο:
- *   Φορτώνει ένα τοπικό μοντέλο μηχανικής μάθησης (all-MiniLM-L6-v2) και
- *   μετατρέπει κείμενα σε αριθμητικά διανύσματα (embeddings).
+ *   Φορτώνει ένα τοπικό πολύγλωσσο μοντέλο μηχανικής μάθησης
+ *   (paraphrase-multilingual-MiniLM-L12-v2) και μετατρέπει κείμενα σε
+ *   αριθμητικά διανύσματα (embeddings).
  *
  * Γιατί χρειάζεται:
  *   Το RAG σύστημα χρειάζεται να συγκρίνει "σημαντολογικά" κείμενα — δηλαδή
@@ -16,7 +17,7 @@
  *   - Χρησιμοποιείται από: ragService.ts, seedKnowledge.ts
  */
 
-// Αριθμός διαστάσεων του μοντέλου all-MiniLM-L6-v2.
+// Αριθμός διαστάσεων του μοντέλου paraphrase-multilingual-MiniLM-L12-v2.
 // Κάθε κείμενο μετατρέπεται σε ακριβώς 384 αριθμούς.
 const EMBEDDING_DIMENSIONS = 384;
 
@@ -52,8 +53,8 @@ async function GetPipeline(): Promise<any> {
   }
 
   // Πρώτη φορά: φόρτωση του μοντέλου από τοπική cache ή λήψη από internet
-  console.log(`[EmbeddingService] Φόρτωση μοντέλου "${MODEL_NAME}"...`);
-  console.log("[EmbeddingService] Η πρώτη φόρτωση μπορεί να πάρει λίγα λεπτά (~80MB λήψη).");
+  console.log(`[EmbeddingService] Loading model "${MODEL_NAME}"...`);
+  console.log("[EmbeddingService] First load may take a few minutes (~80MB download).");
 
   // Dynamic import για ESM compatibility.
   // Χρησιμοποιούμε Function() για να αποτρέψουμε το TypeScript compiler να μετατρέψει
@@ -64,7 +65,7 @@ async function GetPipeline(): Promise<any> {
   // Δημιουργία pipeline για feature extraction (= παραγωγή embeddings)
   pipelineInstance = await pipeline("feature-extraction", MODEL_NAME);
 
-  console.log(`[EmbeddingService] Μοντέλο φορτώθηκε επιτυχώς. Διαστάσεις: ${EMBEDDING_DIMENSIONS}`);
+  console.log(`[EmbeddingService] Model loaded successfully. Dimensions: ${EMBEDDING_DIMENSIONS}`);
   return pipelineInstance;
 }
 
@@ -108,7 +109,7 @@ export async function GetEmbedding(text: string): Promise<number[]> {
 
     return embedding;
   } catch (error) {
-    console.error("[EmbeddingService] Σφάλμα κατά τον υπολογισμό embedding:", error);
+    console.error("[EmbeddingService] Error computing embedding:", error);
     throw error;
   }
 }
@@ -125,11 +126,11 @@ export async function GetEmbedding(text: string): Promise<number[]> {
 export async function WarmUp(): Promise<void> {
   try {
     await GetPipeline();
-    console.log("[EmbeddingService] Warm-up ολοκληρώθηκε — το μοντέλο είναι έτοιμο.");
+    console.log("[EmbeddingService] Warm-up complete — model is ready.");
   } catch (error) {
     // Δεν κάνουμε crash τον server αν αποτύχει το warm-up.
     // Το μοντέλο θα φορτωθεί στο πρώτο πραγματικό request.
-    console.warn("[EmbeddingService] Αδυναμία warm-up μοντέλου:", error);
+    console.warn("[EmbeddingService] Model warm-up failed:", error);
   }
 }
 

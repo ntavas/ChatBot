@@ -49,14 +49,15 @@ This phase upgrades the chatbot from keyword-based to semantic search.
   cd backend && npm install @xenova/transformers
   ```
 - [x] Create `backend/src/services/embeddingService.js`
-  - [x] Load model `Xenova/all-MiniLM-L6-v2` (384 dimensions, ~80MB)
+  - [x] Load model `Xenova/paraphrase-multilingual-MiniLM-L12-v2` (384 dimensions, ~250MB, 50+ γλώσσες)
+    > Note: Αλλάχτηκε από `all-MiniLM-L6-v2` σε `paraphrase-multilingual-MiniLM-L12-v2` για cross-lingual υποστήριξη — ερωτήσεις στα Ελληνικά και Αγγλικά βρίσκουν τα ίδια FAQs. Τα embeddings ξαναγεννήθηκαν.
   - [x] Singleton pattern — load once at startup, reuse everywhere
   - [x] Function `getEmbedding(text)` → returns `Float32Array` → `Array`
   - [x] Comments explaining: what an embedding is, why 384 numbers, what cosine similarity means
   - [x] Optional: cache embeddings in memory (Map) for repeated queries
   > Note: File is TypeScript (`embeddingService.ts`). Used `new Function('return import(...)')()` trick to avoid TypeScript compiler converting dynamic `import()` to `require()` (which fails for ESM packages in a CommonJS project). Also exports `WarmUp()` for preloading the model at server startup, and `EMBEDDING_DIMENSIONS` constant for reuse in other files.
 - [x] Test: run `getEmbedding("test")` and verify it returns an array of 384 numbers
-- [x] 📝 Update README.md: "Added local embedding model (all-MiniLM-L6-v2)"
+- [x] 📝 Update README.md: "Added local embedding model (paraphrase-multilingual-MiniLM-L12-v2)"
 
 ### 1.2 Knowledge Base Collection
 

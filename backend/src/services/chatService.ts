@@ -117,11 +117,11 @@ export async function ProcessUserMessage(
 
   if (ragResults.length > 0) {
     console.log(
-      `[ChatService] RAG βρήκε ${ragResults.length} σχετικά έγγραφα:`,
+      `[ChatService] RAG found ${ragResults.length} relevant documents:`,
       ragResults.map((r) => `${r.document.title} (score: ${r.score.toFixed(3)})`)
     );
   } else {
-    console.log("[ChatService] RAG: δεν βρέθηκαν σχετικά έγγραφα — ο bot θα παραπέμψει σε agent.");
+    console.log("[ChatService] RAG: no relevant documents found — bot will escalate to agent.");
   }
 
   // ── Βήμα 3: Κατασκευή δυναμικού system prompt ─────────────────────────────
