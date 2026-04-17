@@ -73,8 +73,8 @@ This phase upgrades the chatbot from keyword-based to semantic search.
     - Products & Availability (products) — 5 entries
     - Account & Registration (account) — 5 entries
   - [x] For each FAQ: `GetEmbedding(content)` → store together with the embedding
-  - [ ] Run: `npx ts-node --transpile-only src/scripts/seedKnowledge.ts`
-- [ ] 📝 Update README.md: instructions for running the seed script
+  - [x] Run: `npx ts-node --transpile-only src/scripts/seedKnowledge.ts`
+- [x] 📝 Update README.md: instructions for running the seed script
 
 ### 1.3 MongoDB Atlas Vector Search Index
 
@@ -85,7 +85,7 @@ This phase upgrades the chatbot from keyword-based to semantic search.
   > Note: Mongoose pluralises the model name to `knowledgebases`, not `knowledge_base` as originally planned.
 - [x] Update `.env` with Atlas connection string
 - [x] Update `.env.example` with placeholder for Atlas URI
-- [ ] 📝 Update README.md: steps to set up the Atlas index
+- [x] 📝 Update README.md: steps to set up the Atlas index
 
 ### 1.4 RAG Search Service
 
@@ -98,8 +98,8 @@ This phase upgrades the chatbot from keyword-based to semantic search.
   - [x] Function `BuildRAGContext(docs)` — converts docs into a formatted string for the prompt
   - [x] Comments on every pipeline step explaining what happens
   - [x] Auto-detects Atlas vs local via URI prefix and uses the correct search method
-- [ ] Test: ask "can I return what I bought?" → should find the returns FAQ (tested in 1.5)
-- [ ] 📝 Update README.md: plain-language explanation of RAG (1 paragraph)
+- [x] Test: ask "can I return what I bought?" → should find the returns FAQ (tested in 1.5)
+- [x] 📝 Update README.md: plain-language explanation of RAG (1 paragraph)
 
 ### 1.5 Integration into chatService
 
@@ -111,11 +111,12 @@ This phase upgrades the chatbot from keyword-based to semantic search.
 
 ### 1.6 Fallback: Local MongoDB (without Atlas)
 
-- [ ] For development/offline: fallback to MongoDB text search
-  - [ ] Text index on the `content` field
-  - [ ] Comment: "If there is no Atlas connection, we use simple keyword search as an alternative"
-  - [ ] `ragService` checks if Atlas → vectorSearch, otherwise → `$text` search
-- [ ] 📝 Update README.md: explanation of the difference between Atlas vs local mode
+- [x] For development/offline: fallback to MongoDB text search
+  - [x] Text index on the `content` field
+  - [x] Comment: "If there is no Atlas connection, we use simple keyword search as an alternative"
+  - [x] `ragService` checks if Atlas → vectorSearch, otherwise → `$text` search
+  > Note: Implemented inside `ragService.ts` via `IsAtlas()` which checks the `MONGODB_URI` prefix. Text index was added to the `KnowledgeBase` schema on `content`+`title` fields.
+- [x] 📝 Update README.md: explanation of the difference between Atlas vs local mode
 
 ---
 

@@ -1,73 +1,76 @@
-# React + TypeScript + Vite
+# ShopEasy ChatBot — Frontend
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+React + TypeScript + Vite frontend for the ShopEasy AI customer support chatbot.
 
-Currently, two official plugins are available:
+---
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+## What it does
 
-## React Compiler
+Provides two pages:
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+- **`/`** — The chat interface where customers talk to the AI bot
+- **`/admin`** — The admin panel where corrections and knowledge base entries are managed
 
-## Expanding the ESLint configuration
+---
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+## Tech Stack
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+| Tool | Purpose |
+|---|---|
+| React 19 | UI components |
+| TypeScript | Type safety |
+| Vite | Dev server and bundler |
+| Tailwind CSS | Styling |
+| React Router | Client-side routing |
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
+---
 
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+## Project Structure
+
+```
+frontend/src/
+├── components/
+│   ├── ChatWindow.tsx      # Main chat UI — message list, input bar, send button
+│   ├── MessageBubble.tsx   # Renders a single message (user or bot)
+│   ├── FeedbackButtons.tsx # Thumbs up/down on bot replies
+│   └── AdminPage.tsx       # Admin panel — feedback review and corrections
+├── services/
+│   └── apiService.ts       # All fetch calls to the backend (/api/*)
+├── types/
+│   └── index.ts            # Shared TypeScript types
+├── App.tsx                 # Root component — routing + dark/light theme
+└── main.tsx                # React entry point
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+---
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+## How to Run
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```bash
+cd frontend
+npm install
+npm run dev   # http://localhost:5173
 ```
+
+The frontend proxies `/api/*` requests to the backend at `http://localhost:3000`.
+Make sure the backend is running before using the app.
+
+---
+
+## Features
+
+- **Chat interface** — send messages, receive AI responses, conversation history persisted in localStorage and MongoDB
+- **Feedback buttons** — thumbs up / thumbs down on every bot reply
+- **Dark / light theme** — toggled via a button in the header, persisted in localStorage, defaults to OS preference
+- **Admin panel** (`/admin`) — lists all thumbs-down feedback with the triggering question and bad answer; allows submitting a correction that gets injected into the system prompt
+
+---
+
+## API Endpoints Used
+
+| Method | Path | What it does |
+|---|---|---|
+| `POST` | `/api/chat` | Send a message, get a bot reply |
+| `POST` | `/api/feedback` | Submit a thumbs up or down vote |
+| `GET` | `/api/admin/feedback` | Fetch all negative feedback entries |
+| `POST` | `/api/admin/feedback/:id/correct` | Submit a correction for a bad answer |
