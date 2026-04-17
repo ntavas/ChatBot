@@ -9,8 +9,14 @@
 //
 // Εξαρτάται από: apiService.ts, types/index.ts
 
-import { useEffect, useState, type FormEvent } from 'react'
+import React, { useEffect, useState, type FormEvent } from 'react'
 import { Link } from 'react-router-dom'
+import {
+  Sun, Moon, LayoutDashboard, BookOpen,
+  ThumbsUp, ThumbsDown, Clock, RefreshCw,
+  Lightbulb, Loader, Plus, Check, X,
+  Pencil, Trash2, ChevronRight,
+} from 'lucide-react'
 import type { AdminFeedbackEntry, FeedbackStats, KnowledgeEntry } from '../types'
 import {
   GetAdminFeedback, GetFeedbackStats, SubmitCorrection,
@@ -64,8 +70,8 @@ function AdminLogin({ isDark, onToggleTheme, onLogin }: AdminPageProps & { onLog
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-zinc-950 flex items-center justify-center p-4">
       <div className="fixed top-4 right-4">
-        <button onClick={onToggleTheme} className="text-lg leading-none hover:scale-110 transition-transform cursor-pointer">
-          {isDark ? '☀️' : '🌙'}
+        <button onClick={onToggleTheme} className="p-1.5 rounded-lg text-gray-400 dark:text-zinc-500 hover:text-gray-600 dark:hover:text-zinc-300 hover:bg-gray-100 dark:hover:bg-zinc-800 transition-colors cursor-pointer">
+          {isDark ? <Sun size={18} /> : <Moon size={18} />}
         </button>
       </div>
       <div className="bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 rounded-2xl p-8 w-full max-w-sm shadow-sm">
@@ -118,9 +124,9 @@ export function AdminPage({ isDark, onToggleTheme }: AdminPageProps) {
 function AuthenticatedAdminPage({ isDark, onToggleTheme }: AdminPageProps) {
   const [activeTab, setActiveTab] = useState<TabId>('dashboard')
 
-  const tabs: { id: TabId; label: string }[] = [
-    { id: 'dashboard', label: '📊 Dashboard' },
-    { id: 'knowledge', label: '📚 Knowledge Base' },
+  const tabs: { id: TabId; icon: React.ReactNode; label: string }[] = [
+    { id: 'dashboard', icon: <LayoutDashboard size={15} />, label: 'Dashboard' },
+    { id: 'knowledge', icon: <BookOpen size={15} />, label: 'Knowledge Base' },
   ]
 
   return (
@@ -131,8 +137,8 @@ function AuthenticatedAdminPage({ isDark, onToggleTheme }: AdminPageProps) {
         <div className="flex items-center justify-between mb-6">
           <h1 className="text-xl font-bold">Admin Panel</h1>
           <div className="flex items-center gap-3">
-            <button onClick={onToggleTheme} className="text-lg leading-none hover:scale-110 transition-transform cursor-pointer">
-              {isDark ? '☀️' : '🌙'}
+            <button onClick={onToggleTheme} className="p-1.5 rounded-lg text-gray-400 dark:text-zinc-500 hover:text-gray-600 dark:hover:text-zinc-300 hover:bg-gray-100 dark:hover:bg-zinc-800 transition-colors cursor-pointer">
+              {isDark ? <Sun size={18} /> : <Moon size={18} />}
             </button>
             <Link to="/" className="text-sm text-indigo-600 dark:text-blue-400 hover:text-indigo-800 dark:hover:text-blue-300 transition-colors">← Chat</Link>
             <button onClick={() => { sessionStorage.removeItem(ADMIN_AUTH_KEY); window.location.reload() }}
@@ -146,12 +152,12 @@ function AuthenticatedAdminPage({ isDark, onToggleTheme }: AdminPageProps) {
         <div className="flex gap-1 bg-gray-200 dark:bg-zinc-800 p-1 rounded-xl mb-6 w-fit">
           {tabs.map((tab) => (
             <button key={tab.id} onClick={() => setActiveTab(tab.id)}
-              className={`px-4 py-1.5 rounded-lg text-sm font-medium transition-colors cursor-pointer ${
+              className={`flex items-center gap-1.5 px-4 py-1.5 rounded-lg text-sm font-medium transition-colors cursor-pointer ${
                 activeTab === tab.id
                   ? 'bg-white dark:bg-zinc-700 text-gray-900 dark:text-zinc-100 shadow-sm'
                   : 'text-gray-500 dark:text-zinc-400 hover:text-gray-800 dark:hover:text-zinc-200'
               }`}>
-              {tab.label}
+              {tab.icon}{tab.label}
             </button>
           ))}
         </div>
@@ -278,13 +284,13 @@ function DashboardTab() {
       {stats && (
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
           {[
-            { label: 'Total Feedback', value: stats.total, color: 'text-gray-800 dark:text-zinc-100' },
-            { label: '👍 Positive', value: `${stats.positivePercent}%`, color: 'text-green-600 dark:text-green-400' },
-            { label: '👎 Negative', value: `${stats.negativePercent}%`, color: 'text-red-600 dark:text-red-400' },
-            { label: 'Pending Review', value: stats.pending, color: 'text-amber-600 dark:text-amber-400' },
+            { label: 'Total Feedback', icon: null, value: stats.total, color: 'text-gray-800 dark:text-zinc-100' },
+            { label: 'Positive', icon: <ThumbsUp size={12} />, value: `${stats.positivePercent}%`, color: 'text-green-600 dark:text-green-400' },
+            { label: 'Negative', icon: <ThumbsDown size={12} />, value: `${stats.negativePercent}%`, color: 'text-red-600 dark:text-red-400' },
+            { label: 'Pending Review', icon: null, value: stats.pending, color: 'text-amber-600 dark:text-amber-400' },
           ].map((card) => (
             <div key={card.label} className="bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 rounded-xl p-4">
-              <p className="text-xs text-gray-400 dark:text-zinc-500 mb-1">{card.label}</p>
+              <p className="text-xs text-gray-400 dark:text-zinc-500 mb-1 flex items-center gap-1">{card.icon}{card.label}</p>
               <p className={`text-2xl font-bold ${card.color}`}>{card.value}</p>
             </div>
           ))}
@@ -297,13 +303,13 @@ function DashboardTab() {
           <p className="text-xs font-medium text-gray-500 dark:text-zinc-400 mb-3">Feedback breakdown</p>
           <div className="flex flex-col gap-2">
             {[
-              { label: '👍 Positive', count: stats.positive, pct: stats.positivePercent, bar: 'bg-green-500' },
-              { label: '👎 Negative', count: stats.negative, pct: stats.negativePercent, bar: 'bg-red-500' },
-              { label: '⏳ Pending', count: stats.pending, pct: stats.total > 0 ? Math.round(stats.pending / stats.total * 100) : 0, bar: 'bg-amber-400' },
-              { label: '✓ Approved', count: stats.approved, pct: stats.total > 0 ? Math.round(stats.approved / stats.total * 100) : 0, bar: 'bg-indigo-500' },
+              { label: 'Positive', icon: <ThumbsUp size={12} />, count: stats.positive, pct: stats.positivePercent, bar: 'bg-green-500' },
+              { label: 'Negative', icon: <ThumbsDown size={12} />, count: stats.negative, pct: stats.negativePercent, bar: 'bg-red-500' },
+              { label: 'Pending', icon: <Clock size={12} />, count: stats.pending, pct: stats.total > 0 ? Math.round(stats.pending / stats.total * 100) : 0, bar: 'bg-amber-400' },
+              { label: 'Approved', icon: <Check size={12} />, count: stats.approved, pct: stats.total > 0 ? Math.round(stats.approved / stats.total * 100) : 0, bar: 'bg-indigo-500' },
             ].map((row) => (
               <div key={row.label} className="flex items-center gap-3">
-                <span className="text-xs text-gray-500 dark:text-zinc-400 w-24 shrink-0">{row.label}</span>
+                <span className="text-xs text-gray-500 dark:text-zinc-400 w-24 shrink-0 flex items-center gap-1">{row.icon}{row.label}</span>
                 <div className="flex-1 bg-gray-100 dark:bg-zinc-800 rounded-full h-2 overflow-hidden">
                   <div className={`h-full rounded-full ${row.bar} transition-all duration-500`} style={{ width: `${row.pct}%` }} />
                 </div>
@@ -336,8 +342,8 @@ function DashboardTab() {
               )
             })}
           </div>
-          <button onClick={HandleRefresh} className="text-sm text-gray-400 dark:text-zinc-500 hover:text-gray-700 dark:hover:text-zinc-300 transition-colors cursor-pointer">
-            ↻ Refresh
+          <button onClick={HandleRefresh} className="flex items-center gap-1.5 text-sm text-gray-400 dark:text-zinc-500 hover:text-gray-700 dark:hover:text-zinc-300 transition-colors cursor-pointer">
+            <RefreshCw size={14} /> Refresh
           </button>
         </div>
 
@@ -370,13 +376,13 @@ function DashboardTab() {
                       </span>
                       {/* Status badge */}
                       {entry.status === 'approved' || actionState === 'approved' ? (
-                        <span className="shrink-0 text-xs bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-400 px-2 py-0.5 rounded-full font-medium">✓ Approved</span>
+                        <span className="shrink-0 flex items-center gap-1 text-xs bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-400 px-2 py-0.5 rounded-full font-medium"><Check size={11} /> Approved</span>
                       ) : entry.status === 'rejected' || actionState === 'rejected' ? (
-                        <span className="shrink-0 text-xs bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 px-2 py-0.5 rounded-full font-medium">✗ Rejected</span>
+                        <span className="shrink-0 flex items-center gap-1 text-xs bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 px-2 py-0.5 rounded-full font-medium"><X size={11} /> Rejected</span>
                       ) : (
-                        <span className="shrink-0 text-xs bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 px-2 py-0.5 rounded-full font-medium">Pending</span>
+                        <span className="shrink-0 flex items-center gap-1 text-xs bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 px-2 py-0.5 rounded-full font-medium"><Clock size={11} /> Pending</span>
                       )}
-                      <span className={`shrink-0 text-gray-400 dark:text-zinc-500 transition-transform duration-200 ${isExpanded ? 'rotate-90' : ''}`}>›</span>
+                      <ChevronRight size={16} className={`shrink-0 text-gray-400 dark:text-zinc-500 transition-transform duration-200 ${isExpanded ? 'rotate-90' : ''}`} />
                     </button>
 
                     {/* Expanded content */}
@@ -404,8 +410,8 @@ function DashboardTab() {
                           <div>
                             <p className="text-xs font-medium text-gray-500 dark:text-zinc-400 mb-1.5">Correction</p>
                             {entry.correction && entry.status === 'pending' && (
-                              <p className="text-xs text-indigo-600 dark:text-blue-400 mb-1.5">
-                                💡 Ο χρήστης πρότεινε αυτή τη διόρθωση — μπορείτε να την επεξεργαστείτε παρακάτω.
+                              <p className="flex items-center gap-1.5 text-xs text-indigo-600 dark:text-blue-400 mb-1.5">
+                                <Lightbulb size={13} className="shrink-0" /> Ο χρήστης πρότεινε αυτή τη διόρθωση — μπορείτε να την επεξεργαστείτε παρακάτω.
                               </p>
                             )}
                             <textarea
@@ -432,20 +438,20 @@ function DashboardTab() {
 
                             {/* Approve / Reject */}
                             {actionState === 'working' ? (
-                              <span className="text-xs text-gray-400 dark:text-zinc-500">Working...</span>
+                              <span className="flex items-center gap-1.5 text-xs text-gray-400 dark:text-zinc-500"><Loader size={13} className="animate-spin" /> Working...</span>
                             ) : actionState === 'approved' || entry.status === 'approved' ? (
-                              <span className="text-xs text-green-600 dark:text-green-400 font-medium">✓ Approved — will be used as golden rule</span>
+                              <span className="flex items-center gap-1.5 text-xs text-green-600 dark:text-green-400 font-medium"><Check size={13} /> Approved — will be used as golden rule</span>
                             ) : actionState === 'rejected' || entry.status === 'rejected' ? (
-                              <span className="text-xs text-red-600 dark:text-red-400 font-medium">✗ Rejected</span>
+                              <span className="flex items-center gap-1.5 text-xs text-red-600 dark:text-red-400 font-medium"><X size={13} /> Rejected</span>
                             ) : (
                               <>
                                 <button onClick={() => HandleAction(entry.messageId, 'rejected')}
-                                  className="px-3 py-1.5 border border-red-300 dark:border-red-800 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/30 text-sm rounded-lg transition-colors cursor-pointer">
-                                  ✗ Reject
+                                  className="flex items-center gap-1.5 px-3 py-1.5 border border-red-300 dark:border-red-800 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/30 text-sm rounded-lg transition-colors cursor-pointer">
+                                  <X size={14} /> Reject
                                 </button>
                                 <button onClick={() => HandleAction(entry.messageId, 'approved')}
-                                  className="px-3 py-1.5 bg-green-600 dark:bg-green-700 hover:bg-green-700 dark:hover:bg-green-600 text-white text-sm rounded-lg transition-colors cursor-pointer">
-                                  ✓ Approve
+                                  className="flex items-center gap-1.5 px-3 py-1.5 bg-green-600 dark:bg-green-700 hover:bg-green-700 dark:hover:bg-green-600 text-white text-sm rounded-lg transition-colors cursor-pointer">
+                                  <Check size={14} /> Approve
                                 </button>
                               </>
                             )}
@@ -600,8 +606,8 @@ function KnowledgeTab() {
           {addError && <p className="text-xs text-red-600 dark:text-red-400">{addError}</p>}
           <div className="flex items-center gap-3">
             <button type="submit" disabled={addState === 'saving' || !addTitle.trim() || !addContent.trim()}
-              className="px-4 py-2 bg-indigo-600 dark:bg-blue-600 hover:bg-indigo-700 dark:hover:bg-blue-700 disabled:opacity-40 disabled:cursor-not-allowed text-white text-sm font-medium rounded-lg transition-colors">
-              {addState === 'saving' ? '⏳ Generating embedding...' : '+ Add FAQ'}
+              className="flex items-center gap-2 px-4 py-2 bg-indigo-600 dark:bg-blue-600 hover:bg-indigo-700 dark:hover:bg-blue-700 disabled:opacity-40 disabled:cursor-not-allowed text-white text-sm font-medium rounded-lg transition-colors">
+              {addState === 'saving' ? <><Loader size={14} className="animate-spin" /> Generating embedding...</> : <><Plus size={14} /> Add FAQ</>}
             </button>
             {addState === 'saving' && (
               <span className="text-xs text-gray-400 dark:text-zinc-500">This may take a few seconds on first run.</span>
@@ -642,8 +648,8 @@ function KnowledgeTab() {
                       {editState === 'error' && <p className="text-xs text-red-500">Failed to save. Try again.</p>}
                       <div className="flex gap-2">
                         <button onClick={() => HandleEditSave(entry._id)} disabled={editState === 'saving'}
-                          className="px-3 py-1.5 bg-indigo-600 dark:bg-blue-600 hover:bg-indigo-700 text-white text-sm rounded-lg disabled:opacity-40 transition-colors">
-                          {editState === 'saving' ? '⏳ Saving...' : 'Save'}
+                          className="flex items-center gap-1.5 px-3 py-1.5 bg-indigo-600 dark:bg-blue-600 hover:bg-indigo-700 text-white text-sm rounded-lg disabled:opacity-40 transition-colors">
+                          {editState === 'saving' ? <><Loader size={14} className="animate-spin" /> Saving...</> : 'Save'}
                         </button>
                         <button onClick={() => setEditingId(null)}
                           className="px-3 py-1.5 text-sm text-gray-400 dark:text-zinc-500 hover:text-gray-700 dark:hover:text-zinc-300 transition-colors">
@@ -667,9 +673,9 @@ function KnowledgeTab() {
                         <p className="text-xs text-gray-500 dark:text-zinc-400 line-clamp-2">{entry.content}</p>
                       </div>
                       <div className="flex gap-1 shrink-0">
-                        <button onClick={() => StartEdit(entry)}
-                          className="px-2.5 py-1.5 text-xs text-gray-500 dark:text-zinc-400 hover:text-indigo-600 dark:hover:text-blue-400 hover:bg-gray-100 dark:hover:bg-zinc-800 rounded-lg transition-colors cursor-pointer">
-                          Edit
+                        <button onClick={() => StartEdit(entry)} title="Edit"
+                          className="p-1.5 text-gray-400 dark:text-zinc-500 hover:text-indigo-600 dark:hover:text-blue-400 hover:bg-gray-100 dark:hover:bg-zinc-800 rounded-lg transition-colors cursor-pointer">
+                          <Pencil size={15} />
                         </button>
                         {isConfirmingDelete ? (
                           <div className="flex gap-1">
@@ -683,9 +689,9 @@ function KnowledgeTab() {
                             </button>
                           </div>
                         ) : (
-                          <button onClick={() => setDeleteConfirmId(entry._id)}
-                            className="px-2.5 py-1.5 text-xs text-gray-500 dark:text-zinc-400 hover:text-red-600 dark:hover:text-red-400 hover:bg-gray-100 dark:hover:bg-zinc-800 rounded-lg transition-colors cursor-pointer">
-                            Delete
+                          <button onClick={() => setDeleteConfirmId(entry._id)} title="Delete"
+                            className="p-1.5 text-gray-400 dark:text-zinc-500 hover:text-red-600 dark:hover:text-red-400 hover:bg-gray-100 dark:hover:bg-zinc-800 rounded-lg transition-colors cursor-pointer">
+                            <Trash2 size={15} />
                           </button>
                         )}
                       </div>

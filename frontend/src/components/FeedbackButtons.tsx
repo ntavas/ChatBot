@@ -8,6 +8,7 @@
 // Χρησιμοποιείται από: MessageBubble.tsx
 
 import { useState } from 'react'
+import { ThumbsUp, ThumbsDown } from 'lucide-react'
 import { SubmitFeedback } from '../services/apiService'
 import type { FeedbackVote } from '../types'
 
@@ -79,7 +80,7 @@ export function FeedbackButtons({
   }
 
   function GetButtonClass(thisVote: FeedbackVote): string {
-    const base = 'text-base px-1 py-0.5 rounded transition-all duration-150'
+    const base = 'p-1 rounded transition-all duration-150'
     if (voted === null && !showCorrectionInput) return `${base} hover:scale-125 cursor-pointer opacity-50 hover:opacity-100`
     if (voted === thisVote) return `${base} cursor-default opacity-100 scale-110`
     if (showCorrectionInput && thisVote === 'down') return `${base} cursor-default opacity-100`
@@ -90,8 +91,8 @@ export function FeedbackButtons({
   if (voted !== null) {
     return (
       <div className="flex gap-0.5 mt-1.5">
-        <button disabled title="Good response" className={GetButtonClass('up')} aria-label="Thumbs up">👍</button>
-        <button disabled title="Bad response" className={GetButtonClass('down')} aria-label="Thumbs down">👎</button>
+        <button disabled title="Good response" className={GetButtonClass('up')} aria-label="Thumbs up"><ThumbsUp size={16} /></button>
+        <button disabled title="Bad response" className={GetButtonClass('down')} aria-label="Thumbs down"><ThumbsDown size={16} /></button>
       </div>
     )
   }
@@ -103,8 +104,8 @@ export function FeedbackButtons({
       // Ο χρήστης μπορεί να το αφήσει κενό και να πατήσει "Submit" χωρίς διόρθωση.
       <div className="mt-2 flex flex-col gap-2 max-w-sm">
         <div className="flex gap-0.5">
-          <button disabled className={GetButtonClass('up')} aria-label="Thumbs up">👍</button>
-          <button disabled className={GetButtonClass('down')} aria-label="Thumbs down">👎</button>
+          <button disabled className={GetButtonClass('up')} aria-label="Thumbs up"><ThumbsUp size={16} /></button>
+          <button disabled className={GetButtonClass('down')} aria-label="Thumbs down"><ThumbsDown size={16} /></button>
         </div>
         <textarea
           className="w-full bg-gray-50 dark:bg-zinc-700 text-gray-800 dark:text-zinc-100 text-xs rounded-lg px-3 py-2 border border-gray-200 dark:border-zinc-600 resize-none focus:outline-none focus:ring-2 focus:ring-indigo-400 dark:focus:ring-blue-500 placeholder-gray-400 dark:placeholder-zinc-400"
@@ -146,7 +147,7 @@ export function FeedbackButtons({
         className={GetButtonClass('up')}
         aria-label="Thumbs up"
       >
-        👍
+        <ThumbsUp size={16} />
       </button>
       <button
         onClick={() => HandleVoteClick('down')}
@@ -155,7 +156,7 @@ export function FeedbackButtons({
         className={GetButtonClass('down')}
         aria-label="Thumbs down"
       >
-        👎
+        <ThumbsDown size={16} />
       </button>
     </div>
   )

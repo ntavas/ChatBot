@@ -8,6 +8,7 @@
 // history in MongoDB, but the browser will not display past messages.
 
 import { useState, useEffect, useRef, KeyboardEvent } from 'react'
+import { Sun, Moon, Trash2, TriangleAlert, Send } from 'lucide-react'
 import type { DisplayMessage } from '../types'
 import { SendMessage } from '../services/apiService'
 import { MessageBubble } from './MessageBubble'
@@ -198,23 +199,7 @@ export function ChatWindow({ isDark, onToggleTheme }: ChatWindowProps) {
                   : 'text-gray-400 dark:text-zinc-500 hover:text-gray-600 dark:hover:text-zinc-300 hover:bg-gray-100 dark:hover:bg-zinc-800'
               }`}
             >
-              {/* Trash / bin SVG icon */}
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                className="w-3.5 h-3.5"
-              >
-                <polyline points="3 6 5 6 21 6" />
-                <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
-                <path d="M10 11v6" />
-                <path d="M14 11v6" />
-                <path d="M9 6V4h6v2" />
-              </svg>
+              <Trash2 size={14} />
               {confirmingClear && <span>Clear?</span>}
             </button>
           )}
@@ -222,9 +207,9 @@ export function ChatWindow({ isDark, onToggleTheme }: ChatWindowProps) {
           <button
             onClick={onToggleTheme}
             title={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
-            className="text-lg leading-none hover:scale-110 transition-transform cursor-pointer"
+            className="p-1.5 rounded-lg text-gray-400 dark:text-zinc-500 hover:text-gray-600 dark:hover:text-zinc-300 hover:bg-gray-100 dark:hover:bg-zinc-800 transition-colors cursor-pointer"
           >
-            {isDark ? '☀️' : '🌙'}
+            {isDark ? <Sun size={18} /> : <Moon size={18} />}
           </button>
         </div>
       </header>
@@ -286,7 +271,7 @@ export function ChatWindow({ isDark, onToggleTheme }: ChatWindowProps) {
       {error && (
         <div className="flex-shrink-0 bg-red-50 dark:bg-red-950 border-t border-red-200 dark:border-red-900">
           <div className="max-w-3xl mx-auto px-4 py-2.5 text-red-600 dark:text-red-300 text-sm flex items-center gap-2">
-            <span>⚠️</span>
+            <TriangleAlert size={16} className="flex-shrink-0" />
             <span>{error}</span>
           </div>
         </div>
@@ -311,9 +296,11 @@ export function ChatWindow({ isDark, onToggleTheme }: ChatWindowProps) {
             <button
               onClick={HandleSend}
               disabled={isLoading || !inputText.trim()}
-              className="flex-shrink-0 bg-indigo-600 hover:bg-indigo-700 dark:bg-blue-600 dark:hover:bg-blue-700 disabled:bg-gray-200 dark:disabled:bg-zinc-700 disabled:text-gray-400 dark:disabled:text-zinc-500 disabled:cursor-not-allowed text-white text-sm font-medium px-4 py-2 rounded-xl transition-colors duration-150"
+              title="Send message"
+              aria-label="Send message"
+              className="flex-shrink-0 bg-indigo-600 hover:bg-indigo-700 dark:bg-blue-600 dark:hover:bg-blue-700 disabled:bg-gray-200 dark:disabled:bg-zinc-700 disabled:text-gray-400 dark:disabled:text-zinc-500 disabled:cursor-not-allowed text-white p-2.5 rounded-xl transition-colors duration-150"
             >
-              Send
+              <Send size={18} />
             </button>
           </div>
         </div>
