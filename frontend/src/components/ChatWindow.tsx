@@ -244,14 +244,24 @@ export function ChatWindow({ isDark, onToggleTheme }: ChatWindowProps) {
           </div>
 
           {/* Conversation */}
-          {messages.map((message) => (
-            <MessageBubble
-              key={message.id}
-              message={message}
-              sessionId={sessionId}
-              onError={ShowError}
-            />
-          ))}
+          {messages.map((message, index) => {
+            // Εύρεση του προηγούμενου μηνύματος χρήστη για αποθήκευση πλαισίου στο feedback
+            // Χρειάζεται μόνο για μηνύματα bot — τα μηνύματα χρήστη δεν έχουν feedback buttons
+            const prevMsg = index > 0 ? messages[index - 1] : null
+            const userQuestion =
+              message.role === 'assistant' && prevMsg?.role === 'user'
+                ? prevMsg.content
+                : null
+            return (
+              <MessageBubble
+                key={message.id}
+                message={message}
+                sessionId={sessionId}
+                userQuestion={userQuestion}
+                onError={ShowError}
+              />
+            )
+          })}
 
           {/* Bot typing indicator */}
           {isLoading && (

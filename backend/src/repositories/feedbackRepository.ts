@@ -1,48 +1,96 @@
 // feedbackRepository.ts
-// All MongoDB queries for the `feedbacks` collection.
-// No business logic lives here — only data access.
+// Όλα τα MongoDB queries για τη collection `feedbacks`.
+// Δεν υπάρχει business logic εδώ — μόνο πρόσβαση στα δεδομένα.
+//
+// Εξαρτάται από: models/Feedback.ts, types/index.ts
+// Χρησιμοποιείται από: feedbackRoutes.ts, chatService.ts
 
 import { FeedbackModel } from "../models/Feedback";
-import { FeedbackVote } from "../types/index";
+import { FeedbackRating } from "../types/index";
 
 /**
- * Saves a single feedback vote to the database.
+ * Αποθηκεύει μια ψήφο feedback στη βάση δεδομένων.
  *
- * @param messageId - The ID of the assistant message being rated.
- * @param sessionId - The session the message belongs to.
- * @param vote - "up" or "down".
- * @throws Error if the MongoDB insert fails.
+ * @param messageId - Το ID του μηνύματος του bot που αξιολογήθηκε.
+ * @param sessionId - Η συνεδρία στην οποία ανήκει το μήνυμα.
+ * @param rating - +1 για θετική, -1 για αρνητική αξιολόγηση.
+ * @param opts - Προαιρετικά πεδία: ερώτημα χρήστη, απάντηση bot, κατάσταση.
+ * @throws Error αν αποτύχει η εισαγωγή στη MongoDB.
  */
 export async function SaveFeedback(
   messageId: string,
   sessionId: string,
-  vote: FeedbackVote
+  rating: FeedbackRating,
+  opts?: {
+    userQuestion?: string | null;
+    botAnswer?: string | null;
+    status?: "pending" | "approved" | "rejected";
+    // Διόρθωση από τον χρήστη — υποβάλλεται μαζί με το 👎 (Φάση 2.2)
+    correction?: string | null;
+  }
 ): Promise<void> {
-  await FeedbackModel.create({ messageId, sessionId, vote });
+  await FeedbackModel.create({
+    messageId,
+    sessionId,
+    rating,
+    // Αποθήκευση ερωτήματος και απάντησης για απευθείας εμφάνιση στον admin (Φάση 2.2)
+    userQuestion: opts?.userQuestion ?? null,
+    botAnswer: opts?.botAnswer ?? null,
+    // Διόρθωση από χρήστη — null αν δεν συμπληρώθηκε
+    correction: opts?.correction ?? null,
+    // Προεπιλογή "pending" — ο admin θα εγκρίνει ή θα απορρίψει (Φάση 2.4)
+    status: opts?.status ?? "pending",
+  });
 }
 
 /**
- * Returns all thumbs-down feedback entries, ordered newest first.
- * Used in Phase 5 to inject negative examples into the system prompt.
+ * Επιστρέφει όλες τις αρνητικές αξιολογήσεις (rating: -1), ταξινομημένες από νεότερη σε παλαιότερη.
+ * Χρησιμοποιείται από το chatService για να εισάγει αρνητικά παραδείγματα στο system prompt.
  *
- * @returns Array of negative feedback documents.
- * @throws Error if the MongoDB query fails.
+ * @returns Πίνακας αρνητικών feedback εγγράφων.
+ * @throws Error αν αποτύχει το query στη MongoDB.
  */
 export async function GetNegativeFeedback() {
-  return FeedbackModel.find({ vote: "down" }).sort({ createdAt: -1 }).lean();
+  // Φιλτράρισμα με rating: -1 αντί για vote: "down" (νέο schema Φάσης 2.1)
+  return FeedbackModel.find({ rating: -1 }).sort({ createdAt: -1 }).lean();
 }
 
 /**
- * Saves an admin-supplied correction onto an existing feedback document.
- * The correction is later injected into the system prompt alongside the bad answer.
+ * Αποθηκεύει μια διόρθωση από τον διαχειριστή σε ένα υπάρχον έγγραφο feedback.
+ * Η διόρθωση εισάγεται αργότερα στο system prompt δίπλα στην κακή απάντηση.
  *
- * @param messageId - The messageId of the thumbed-down bot message.
- * @param correction - The corrected answer text supplied by the admin.
- * @throws Error if no matching document is found or the update fails.
+ * @param messageId - Το messageId του μηνύματος που αξιολογήθηκε αρνητικά.
+ * @param correction - Το κείμενο της σωστής απάντησης από τον διαχειριστή.
+ * @throws Error αν δεν βρεθεί έγγραφο ή αποτύχει η ενημέρωση.
  */
 export async function SaveCorrection(messageId: string, correction: string): Promise<void> {
   await FeedbackModel.findOneAndUpdate(
     { messageId },
     { $set: { correction } }
   );
+}
+
+/**
+ * Ενημερώνει το status ενός feedback (approve/reject) και προαιρετικά τη διόρθωσή του.
+ *
+ * Γιατί χρειάζεται:
+ *   Μόνο τα "approved" feedbacks εισάγονται ως golden rules στο system prompt.
+ *   Ο admin κάνει approve/reject από τον πίνακα διαχείρισης (Φάση 2.4/2.5).
+ *
+ * @param messageId - Το ID του μηνύματος που αξιολογήθηκε.
+ * @param status - Η νέα κατάσταση: "approved" ή "rejected".
+ * @param correction - Προαιρετική ενημέρωση της διόρθωσης.
+ * @throws Error αν αποτύχει η ενημέρωση.
+ */
+export async function UpdateFeedbackStatus(
+  messageId: string,
+  status: "approved" | "rejected",
+  correction?: string
+): Promise<void> {
+  const update: Record<string, string> = { status };
+  // Αν ο admin έδωσε διόρθωση μαζί με την έγκριση, αποθηκεύεται και αυτή
+  if (typeof correction === "string" && correction.trim()) {
+    update.correction = correction.trim();
+  }
+  await FeedbackModel.findOneAndUpdate({ messageId }, { $set: update });
 }

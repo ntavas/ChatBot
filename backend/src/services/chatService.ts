@@ -5,12 +5,9 @@
 import { v4 as uuidv4 } from "uuid";
 import { GetAIProvider } from "../config/aiProviderFactory";
 import * as conversationRepository from "../repositories/conversationRepository";
-import * as feedbackRepository from "../repositories/feedbackRepository";
 import { FindRelevantDocs, BuildRAGContext } from "./ragService";
+import { GetGoldenRules, GetNegativeExamples, BuildFeedbackPromptSection } from "./feedbackEngine";
 import { Message, ChatResponse } from "../types/index";
-
-// Cap how many negative examples we inject — guards against token bloat if thumbs-downs accumulate.
-const MAX_NEGATIVE_EXAMPLES = 5;
 
 /**
  * BuildSystemPrompt: Κατασκευάζει δυναμικά το system prompt για κάθε request.
@@ -48,43 +45,26 @@ ${ragContext}`
 
   const basePrompt = `${baseInstructions}\n\n${knowledgeSection}\n\n${rules}`;
 
-  // ── Ενότητα feedback (αρνητικά παραδείγματα) ──────────────────────────────
-  // Φέρνουμε τα πιο πρόσφατα αρνητικά feedbacks για να τα αποφύγει ο bot
-  const negativeFeedback = await feedbackRepository.GetNegativeFeedback();
+  // ── Ενότητα feedback (golden rules + αρνητικά παραδείγματα) ───────────────
+  // Χρησιμοποιούμε το feedbackEngine που χωρίζει:
+  //   - Golden rules: εγκεκριμένες διορθώσεις (status: "approved") → "❌ Λάθος → ✅ Σωστό"
+  //   - Negative examples: αναξιολόγητα thumbs-down (status: "pending") → "απόφυγε αυτό"
+  // Τα δεδομένα (botAnswer, correction) είναι αποθηκευμένα απευθείας στο feedback document
+  // (Φάση 2.2) — δεν χρειάζεται πλέον join με τη συνομιλία.
+  const [goldenRules, negativeExamples] = await Promise.all([
+    GetGoldenRules(),
+    GetNegativeExamples(),
+  ]);
 
-  if (negativeFeedback.length === 0) {
-    return basePrompt;
+  const feedbackSection = BuildFeedbackPromptSection(goldenRules, negativeExamples);
+
+  if (feedbackSection) {
+    console.log(
+      `[ChatService] Feedback injected — golden rules: ${goldenRules.length}, negative examples: ${negativeExamples.length}`
+    );
   }
 
-  const recentNegatives = negativeFeedback.slice(0, MAX_NEGATIVE_EXAMPLES);
-  const messageIds = recentNegatives.map((f) => f.messageId);
-  const badMessages = await conversationRepository.GetMessagesByIds(messageIds);
-  const badBotReplies = badMessages.filter((m) => m.role === "assistant");
-
-  if (badBotReplies.length === 0) {
-    return basePrompt;
-  }
-
-  // Χτίζουμε map από messageId → correction για να συμπεριλάβουμε τις διορθώσεις
-  const correctionMap = new Map<string, string | null>();
-  for (const f of recentNegatives) {
-    correctionMap.set(f.messageId, f.correction ?? null);
-  }
-
-  const exampleLines = badBotReplies
-    .map((m) => {
-      const correction = correctionMap.get(m.messageId);
-      if (correction) {
-        return `- Απέφυγε: "${m.content}". Πες αντί αυτού: "${correction}"`;
-      }
-      return `- Απέφυγε αυτό το είδος απάντησης: "${m.content}"`;
-    })
-    .join("\n");
-
-  const negativeExamplesSection =
-    `ΑΠΟΦΥΓΕ ΑΥΤΕΣ ΤΙΣ ΑΠΑΝΤΗΣΕΙΣ (αξιολογήθηκαν αρνητικά από χρήστες):\n${exampleLines}`;
-
-  return `${basePrompt}\n\n${negativeExamplesSection}`;
+  return feedbackSection ? `${basePrompt}\n\n${feedbackSection}` : basePrompt;
 }
 
 /**

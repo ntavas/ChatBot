@@ -1,6 +1,8 @@
 // MessageBubble.tsx
-// Renders a single chat message, styled differently for user vs bot.
-// Bot messages include feedback buttons below the bubble.
+// Αποδίδει ένα μεμονωμένο μήνυμα συνομιλίας, με διαφορετικό στυλ για χρήστη και bot.
+// Τα μηνύματα bot περιλαμβάνουν κουμπιά feedback κάτω από τη φούσκα.
+// Το userQuestion (το προηγούμενο μήνυμα χρήστη) μεταβιβάζεται στα FeedbackButtons
+// ώστε να αποθηκεύεται μαζί με το feedback για άμεση εμφάνιση στον admin.
 
 import type { DisplayMessage } from '../types'
 import { FeedbackButtons } from './FeedbackButtons'
@@ -8,19 +10,21 @@ import { FeedbackButtons } from './FeedbackButtons'
 interface MessageBubbleProps {
   message: DisplayMessage
   sessionId: string
+  // Το ερώτημα του χρήστη που προηγήθηκε — null αν δεν υπάρχει προηγούμενο μήνυμα
+  userQuestion?: string | null
   onError: (message: string) => void
 }
 
 /**
- * Renders one chat message. User messages are right-aligned with an indigo/blue bubble;
- * bot messages are left-aligned with a white/zinc bubble and the support bot avatar.
- * FeedbackButtons are rendered below bot messages only.
+ * Αποδίδει ένα μήνυμα συνομιλίας. Τα μηνύματα χρηστών στοιχίζονται δεξιά·
+ * τα μηνύματα bot στοιχίζονται αριστερά με avatar και κουμπιά feedback.
  *
- * @param message - The message to display.
- * @param sessionId - Passed through to FeedbackButtons for feedback submission.
- * @param onError - Passed through to FeedbackButtons for error display.
+ * @param message - Το μήνυμα προς εμφάνιση.
+ * @param sessionId - Μεταβιβάζεται στα FeedbackButtons για υποβολή feedback.
+ * @param userQuestion - Το ερώτημα του χρήστη πριν από αυτή την απάντηση (για αποθήκευση πλαισίου).
+ * @param onError - Μεταβιβάζεται στα FeedbackButtons για εμφάνιση σφαλμάτων.
  */
-export function MessageBubble({ message, sessionId, onError }: MessageBubbleProps) {
+export function MessageBubble({ message, sessionId, userQuestion, onError }: MessageBubbleProps) {
   const isUser = message.role === 'user'
 
   if (isUser) {
@@ -45,7 +49,13 @@ export function MessageBubble({ message, sessionId, onError }: MessageBubbleProp
         <div className="bg-white dark:bg-zinc-800 border border-gray-200 dark:border-zinc-700 shadow-sm text-gray-800 dark:text-zinc-100 px-4 py-2.5 rounded-2xl rounded-tl-sm text-sm leading-relaxed whitespace-pre-wrap break-words">
           {message.content}
         </div>
-        <FeedbackButtons messageId={message.id} sessionId={sessionId} onError={onError} />
+        <FeedbackButtons
+          messageId={message.id}
+          sessionId={sessionId}
+          userQuestion={userQuestion}
+          botAnswer={message.content}
+          onError={onError}
+        />
       </div>
     </div>
   )

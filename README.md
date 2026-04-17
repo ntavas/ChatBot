@@ -10,10 +10,12 @@ Built with Node.js, React, MongoDB, and a swappable AI provider backend (OpenRou
 - **Chat interface** — real-time conversation with a support bot grounded in ShopEasy's knowledge base
 - **Conversation history** — sessions persist across page refreshes via localStorage; the full history is stored in MongoDB
 - **Thumbs up / down feedback** — users can rate any bot response
-- **Feedback loop** — thumbs-down votes are injected into the system prompt as negative examples, steering future responses away from unhelpful patterns
+- **Feedback loop** — 👎 votes + optional user corrections are saved to MongoDB and reviewed by an admin; approved corrections become golden rules injected into every future system prompt as few-shot examples
 - **Swappable AI provider** — switch between OpenRouter, Gemini, or OpenAI via a single environment variable
 - **Local multilingual embedding model** — uses `paraphrase-multilingual-MiniLM-L12-v2` (via `@xenova/transformers`) to convert text into 384-dimension vectors locally, with no cloud API required; supports 50+ languages (Greek, English, etc.) with cross-lingual semantic search — e.g. an English question matches a Greek FAQ entry
 - **RAG (Retrieval-Augmented Generation)** — before every reply, the bot converts the user's question into a vector and searches the knowledge base for the 3 most semantically similar entries; only the relevant information is injected into the prompt, keeping answers focused and accurate
+- **Human-in-the-Loop feedback loop** — when a user clicks 👎 they can optionally type what the correct answer should have been; an admin reviews submissions in the admin panel, approves or rejects them; approved corrections become "golden rules" injected into every future system prompt as few-shot examples
+- **Admin panel** (`/admin`) — password-protected dashboard with: feedback stats (total votes, positive/negative %, pending/approved/rejected counts), per-entry approve/reject workflow, and full CRUD for the knowledge base (add, edit, delete FAQs with automatic embedding generation)
 
 ---
 
@@ -73,7 +75,36 @@ Open **http://localhost:5173** in your browser.
 1. Type a message and press **Enter** (or click Send)
 2. The bot answers based on ShopEasy's knowledge base only
 3. Click 👍 or 👎 on any bot reply to submit feedback
-4. Thumbs-down votes are automatically injected into the system prompt — the bot will avoid similar phrasing in future responses
+4. On 👎, an optional input appears — type what the correct answer should have been
+5. Thumbs-down votes (and corrections) are reviewed by an admin at `/admin`
+
+### Admin Panel
+
+Navigate to **http://localhost:5173/admin** and log in with the password set in `ADMIN_PASSWORD` (default: `admin`).
+
+**Dashboard tab:**
+- Stats cards: total votes, positive %, negative %, pending corrections
+- Bar chart: visual breakdown of positive / negative / pending / approved
+- Feedback list: every 👎 with the user's question, the bot's wrong answer, and a correction field; Approve / Reject buttons
+
+**Knowledge Base tab:**
+- View all active FAQ entries (title, category, content)
+- Add new entries — embedding is generated automatically
+- Edit entries inline — embedding is regenerated only when content changes
+- Delete entries (soft delete — entry is hidden from RAG but not erased)
+
+### Admin API Endpoints
+
+| Method | Path | Description |
+|---|---|---|
+| GET | `/api/admin/feedback` | List all negative feedback entries with context |
+| GET | `/api/admin/feedback/stats` | Stats: totals, percentages, status breakdown |
+| PUT | `/api/admin/feedback/:messageId` | Approve or reject a correction |
+| POST | `/api/admin/feedback/:messageId/correct` | Save a correction (legacy) |
+| GET | `/api/admin/knowledge` | List all active knowledge base entries |
+| POST | `/api/admin/knowledge` | Create a new entry (auto-generates embedding) |
+| PUT | `/api/admin/knowledge/:id` | Update an entry (re-embeds if content changed) |
+| DELETE | `/api/admin/knowledge/:id` | Soft-delete an entry (`isActive: false`) |
 
 ---
 
@@ -99,9 +130,9 @@ docker-compose restart backend
 /
 ├── backend/src/
 │   ├── config/          # env validation, DB connection, AI provider factory
-│   ├── routes/          # POST /api/chat, POST /api/feedback
-│   ├── services/        # chatService (orchestration), AI provider implementations
-│   ├── repositories/    # MongoDB queries (conversations, feedback)
+│   ├── routes/          # POST /api/chat, POST /api/feedback, /api/admin/*
+│   ├── services/        # chatService, ragService, embeddingService, feedbackEngine
+│   ├── repositories/    # MongoDB queries (conversations, feedback, knowledge)
 │   └── models/          # Mongoose schemas
 ├── frontend/src/
 │   ├── components/      # ChatWindow, MessageBubble, FeedbackButtons

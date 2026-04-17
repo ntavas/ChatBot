@@ -127,82 +127,91 @@ This phase upgrades the chatbot from keyword-based to semantic search.
 
 ### 2.1 Enhanced Feedback Schema
 
-- [ ] Update Mongoose model `Feedback` (`backend/src/models/Feedback.js`)
-  - [ ] File comment: "Each document here represents a user's rating of a bot response"
-  - [ ] Comments on every field:
+- [x] Update Mongoose model `Feedback` (`backend/src/models/Feedback.ts`)
+  - [x] File comment: "Κάθε έγγραφο εδώ αντιπροσωπεύει την αξιολόγηση ενός χρήστη για μια απάντηση του bot"
+  - [x] Comments on every field (in Greek):
   ```
   {
-    conversationId:  ObjectId,  // which conversation this belongs to
-    messageIndex:    Number,    // which message within the conversation
-    userQuestion:    String,    // what the user asked
-    botAnswer:       String,    // what the bot answered
-    rating:          Number,    // +1 (good) or -1 (bad)
-    correction:      String,    // (optional) the correct answer from user/admin
-    status:          String,    // "pending" = awaiting approval | "approved" | "rejected"
-    category:        String,    // question topic (auto or manual)
-    createdAt:       Date
+    messageId:    String,   // μοναδικό ID του μηνύματος bot που αξιολογήθηκε
+    sessionId:    String,   // ID της συνομιλίας (αντί για conversationId ObjectId)
+    rating:       Number,   // +1 (👍) or -1 (👎) — αντικατέστησε το vote: "up"|"down"
+    userQuestion: String,   // ερώτημα χρήστη — αποθηκεύεται στη Φάση 2.2
+    botAnswer:    String,   // απάντηση bot — αποθηκεύεται στη Φάση 2.2
+    correction:   String,   // (optional) η σωστή απάντηση από χρήστη/admin
+    status:       String,   // "pending" | "approved" | "rejected"
+    category:     String,   // θεματική κατηγορία (προαιρετικό)
+    messageIndex: Number,   // θέση μηνύματος στη συνομιλία (προαιρετικό)
+    createdAt:    Date
   }
   ```
-- [ ] 📝 Update TODO.md with any differences from the original schema
+  > Note: Χρησιμοποιείται `sessionId: String` αντί για `conversationId: ObjectId` για συμβατότητα με την υπάρχουσα αρχιτεκτονική. Το `vote: "up"|"down"` αντικαταστάθηκε από `rating: +1|-1`. Η μετατροπή vote→rating γίνεται στο `feedbackRoutes.ts`. Το `adminRepository.ts` διατηρεί fallback join με τις συνομιλίες για παλαιά δεδομένα χωρίς αποθηκευμένο πλαίσιο. Το `AdminPage.tsx` ενημερώθηκε με νέο status badge (Approved/Rejected/Pending).
+- [x] 📝 Updated TODO.md with differences from original schema
 
 ### 2.2 Correction Input in the Frontend
 
-- [ ] When the user clicks 👎, show a text input:
-  "What would the correct answer have been?" (optional)
-- [ ] POST `/api/feedback` sends: `{ messageId, rating, correction? }`
-- [ ] Comment on the component: "This input only appears after a negative rating and is optional"
+- [x] When the user clicks 👎, show a text input:
+  "Ποια θα ήταν η σωστή απάντηση;" (optional — in Greek per CLAUDE.md)
+- [x] POST `/api/feedback` sends: `{ messageId, sessionId, vote, userQuestion?, botAnswer?, correction? }`
+  > Note: Αποστέλλεται `vote: "up"|"down"` (το route το μετατρέπει σε rating). Προστέθηκαν `userQuestion` και `botAnswer` για αποθήκευση πλαισίου (Φάση 2.1). Η `correction` αποστέλλεται μόνο αν ο χρήστης συμπλήρωσε κάτι.
+- [x] Comment on the component: "Αυτό το input εμφανίζεται μόνο μετά από αρνητική αξιολόγηση και είναι προαιρετικό"
+- [x] ChatWindow.tsx: υπολογίζει το `userQuestion` (προηγούμενο μήνυμα) ανά bot μήνυμα
+- [x] MessageBubble.tsx: μεταβιβάζει `userQuestion` και `botAnswer` στα FeedbackButtons
+- [x] apiService.ts: `SubmitFeedback()` δέχεται προαιρετικά `userQuestion`, `botAnswer`, `correction`
 
 ### 2.3 Golden Rules Engine
 
-- [ ] Create `backend/src/services/feedbackEngine.js`
-  - [ ] File comment: "This service converts approved feedback into rules that are injected into the system prompt, so the AI learns from its mistakes"
-  - [ ] Function `getGoldenRules(limit=5)`:
-    - [ ] Comment: "Fetches examples of correct answers that have been approved by an admin"
-    - Fetches approved corrections from MongoDB
-    - Formats them as few-shot examples
-  - [ ] Function `getNegativeExamples(limit=5)`:
-    - [ ] Comment: "Fetches examples of bad answers so the AI avoids repeating them"
-    - Fetches thumbs-down entries without a correction
-  - [ ] Injection into the system prompt:
+- [x] Create `backend/src/services/feedbackEngine.ts`
+  - [x] File comment: "Μετατρέπει εγκεκριμένα feedbacks σε κανόνες που εισάγονται στο system prompt"
+  - [x] Function `GetGoldenRules(limit=5)`:
+    - [x] Comment: "Φέρνει εγκεκριμένες διορθώσεις (status: approved) από τη MongoDB"
+    - Fetches `{ rating: -1, status: "approved", correction: { $ne: null } }` from MongoDB
+    - No conversation join needed — `botAnswer` and `correction` stored directly (Phase 2.2)
+  - [x] Function `GetNegativeExamples(limit=5)`:
+    - [x] Comment: "Φέρνει αρνητικές αξιολογήσεις που δεν έχουν εγκριθεί ακόμα"
+    - Fetches `{ rating: -1, status: "pending" }` from MongoDB
+    - Includes user-suggested corrections (pending approval) as hints
+  - [x] Function `BuildFeedbackPromptSection(goldenRules, negativeExamples)`:
+    - Formats both arrays into a single string for system prompt injection
+    - Returns "" if no data (keeps prompt clean)
+  - [x] Injection format in prompt:
     ```
-    LEARN FROM PREVIOUS CORRECTIONS:
-    Q: "how do I make a return?"
-    ❌ Wrong: "Send an email to support"
-    ✅ Correct: "Account > Orders > Return within 30 days"
+    ΜΑΘΕ ΑΠΟ ΠΡΟΗΓΟΥΜΕΝΕΣ ΔΙΟΡΘΩΣΕΙΣ:
+    Ε: "..." | ❌ Λάθος: "..." | ✅ Σωστό: "..."
 
-    AVOID THIS TYPE OF ANSWER:
-    - "I'm not sure, try to..."
-    - "As an AI, I cannot..."
+    ΑΠΟΦΥΓΕ ΑΥΤΟ ΤΟ ΕΙΔΟΣ ΑΠΑΝΤΗΣΗΣ:
+    - "..."
     ```
-- [ ] 📝 Update README.md: explanation of how the feedback → improvement cycle works
+  > Note: File is TypeScript. `GetGoldenRules` and `GetNegativeExamples` run in parallel via `Promise.all` in chatService. The old inline feedback logic in chatService (which required a conversation join) was replaced entirely by feedbackEngine calls. Golden rules = approved by admin; negative examples = still pending.
+- [x] 📝 chatService.ts updated: removed `feedbackRepository` import, now uses `feedbackEngine`
 
 ### 2.4 Admin Panel — Backend Routes
 
-- [ ] Comment on the router file: "These endpoints are for administrators only. They allow monitoring and correcting the bot's behaviour."
-- [ ] `GET  /api/admin/feedback` — list feedbacks (paginated, filterable by status/rating)
-- [ ] `GET  /api/admin/feedback/stats` — statistics: % positive, % negative, top topics
-- [ ] `PUT  /api/admin/feedback/:id` — approve/reject correction, edit
-- [ ] `GET  /api/admin/knowledge` — list knowledge base entries
-- [ ] `POST /api/admin/knowledge` — add new FAQ (auto-generate embedding)
-- [ ] `PUT  /api/admin/knowledge/:id` — edit FAQ (re-generate embedding)
-- [ ] `DELETE /api/admin/knowledge/:id` — soft delete (isActive: false)
-- [ ] 📝 Update README.md: list all admin endpoints with a short description
+- [x] Comment on the router file: "Αυτά τα endpoints είναι αποκλειστικά για διαχειριστές"
+- [x] `GET  /api/admin/feedback` — λίστα αρνητικών αξιολογήσεων (υπήρχε ήδη)
+- [x] `GET  /api/admin/feedback/stats` — στατιστικά: total, % θετικών/αρνητικών, pending/approved/rejected
+- [x] `PUT  /api/admin/feedback/:messageId` — approve/reject διόρθωσης (νέο endpoint)
+- [x] `POST /api/admin/feedback/:messageId/correct` — αποθήκευση διόρθωσης (διατηρήθηκε για συμβατότητα)
+- [x] `GET  /api/admin/knowledge` — λίστα εγγραφών γνωσιακής βάσης (χωρίς embeddings)
+- [x] `POST /api/admin/knowledge` — νέα εγγραφή με auto-embed μέσω embeddingService
+- [x] `PUT  /api/admin/knowledge/:id` — επεξεργασία (re-embed αν αλλάξει content)
+- [x] `DELETE /api/admin/knowledge/:id` — soft delete (isActive: false)
+  > Note: Δημιουργήθηκε `knowledgeRepository.ts` για CRUD γνωσιακής βάσης. Προστέθηκε `UpdateFeedbackStatus` στο `feedbackRepository.ts`. Προστέθηκε `GetFeedbackStats` στο `adminRepository.ts` με MongoDB aggregation. Προστέθηκε `FeedbackStats` interface στα backend types. Το `/feedback/stats` καταχωρείται πριν το `/:messageId` για σωστή δρομολόγηση.
+- [x] 📝 Update README.md: list all admin endpoints with a short description
 
 ### 2.5 Admin Panel — Frontend (React)
 
-- [ ] Route `/admin` — protected page (basic auth or simple password for demo)
-- [ ] Comment on the component: "This page is accessible only to the administrator. It allows monitoring and improving the bot."
-- [ ] **Dashboard tab:**
-  - [ ] Cards: Total conversations, Positive %, Negative %, Pending corrections
-  - [ ] Bar chart: feedback by category (recharts or chart.js)
-  - [ ] List of recent thumbs-down with approve/reject buttons
-- [ ] **Knowledge Base tab:**
-  - [ ] CRUD table: title, category, content, actions (edit/delete)
-  - [ ] Form: add new FAQ
-- [ ] **Tone Settings tab** (optional/stretch):
-  - [ ] Dropdown: Professional / Friendly / Concise
-  - [ ] Dynamically changes the system prompt tone
-- [ ] 📝 Update README.md with screenshots and description of the admin panel
+- [x] Route `/admin` — protected page (basic auth or simple password for demo)
+- [x] Comment on the component: "This page is accessible only to the administrator. It allows monitoring and improving the bot."
+- [x] **Dashboard tab:**
+  - [x] Cards: Total conversations, Positive %, Negative %, Pending corrections
+  - [x] Bar chart: feedback breakdown (positive / negative / pending / approved) — CSS/Tailwind, no chart library
+  - [x] List of recent thumbs-down with approve/reject buttons, optimistic UI update
+- [x] **Knowledge Base tab:**
+  - [x] CRUD table: title, category, content, actions (edit/delete)
+  - [x] Form: add new FAQ with "⏳ Generating embedding..." loading state
+  - [x] Inline edit form; two-step delete confirmation
+- [x] 📝 Update README.md with description of admin panel and all admin API endpoints
+  > Note: Tone Settings tab skipped (stretch goal, not needed for thesis). No chart library used — CSS bar chart keeps dependencies minimal per CLAUDE.md. Admin login uses sessionStorage so auth clears on tab close. `actionStates` map tracks per-entry Approve/Reject loading state. Stats update optimistically after approve/reject without a full page reload.
 
 ---
 
