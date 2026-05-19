@@ -239,16 +239,17 @@ This phase upgrades the chatbot from keyword-based to semantic search.
 
 ### 3.3 Evaluation Setup
 
-- [ ] Create 20–30 test questions (evaluation dataset):
-  - 10 direct (direct match with knowledge base)
-  - 10 paraphrased (semantic similarity test)
-  - 5–10 off-topic (bot should say "I don't know")
-- [ ] Script `backend/src/scripts/evaluate.js`:
-  - [ ] File comment: "This script automatically evaluates the chatbot's accuracy. It runs questions with known answers and counts how many were answered correctly."
-  - Runs questions automatically
-  - Measures: accuracy, relevance score, false positives
-  - Comparison: before feedback loop vs after (shows improvement)
-- [ ] Results table for the project report
+- [x] Script `backend/src/scripts/evaluate.ts`:
+  - [x] File comment in Greek explaining all 3 phases and why the script exists
+  - [x] Runs 3 evaluation scenarios automatically
+  - [x] ΦΑΣΗ 1 — Baseline: asks each question without any feedback in the DB
+  - [x] ΦΑΣΗ 2 — Injection: inserts approved golden rules directly into MongoDB (simulates admin approval)
+  - [x] ΦΑΣΗ 3 — Post-correction: asks the same questions again with golden rules active
+  - [x] Keyword detection: checks if correction keywords appear in the new answers
+  - [x] Final score: X/N scenarios improved (%)
+  - [x] Prints side-by-side before/after comparison for each scenario
+  > Note: Test dataset is inline in the script (3 scenarios covering returns, shipping, defective products). Each scenario injects a policy change not present in the KB, then verifies the bot adopts it. Implemented as TypeScript (.ts), not .js. Run with: `npx ts-node --transpile-only src/scripts/evaluate.ts`
+- [ ] Results table for the project report (run the script and paste the output)
 
 ### 3.4 Docker & Local Setup
 

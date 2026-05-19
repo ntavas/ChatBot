@@ -93,17 +93,21 @@ export function BuildFeedbackPromptSection(
           ? `Ε: "${rule.userQuestion}"`
           : null;
         const wrong = rule.botAnswer
-          ? `❌ Λάθος: "${rule.botAnswer}"`
+          ? `❌ Παλιά (λανθασμένη) απάντηση: "${rule.botAnswer}"`
           : null;
         // Το correction πάντα υπάρχει για golden rules (φιλτράρεται στο query)
-        const correct = `✅ Σωστό: "${rule.correction}"`;
+        const correct = `✅ ΣΩΣΤΗ απάντηση που ΠΡΕΠΕΙ να δώσεις: "${rule.correction}"`;
 
-        return [question, wrong, correct].filter(Boolean).join(" | ");
+        return [question, wrong, correct].filter(Boolean).join("\n");
       })
       .filter((line) => line.length > 0);
 
     if (ruleLines.length > 0) {
-      parts.push(`ΜΑΘΕ ΑΠΟ ΠΡΟΗΓΟΥΜΕΝΕΣ ΔΙΟΡΘΩΣΕΙΣ:\n${ruleLines.join("\n")}`);
+      parts.push(
+        `ΥΠΟΧΡΕΩΤΙΚΕΣ ΔΙΟΡΘΩΣΕΙΣ — ΕΧΟΥΝ ΠΡΟΤΕΡΑΙΟΤΗΤΑ ΕΝΑΝΤΙ ΤΗΣ ΓΝΩΣΙΑΚΗΣ ΒΑΣΗΣ:\n` +
+        `(Για τις παρακάτω ερωτήσεις, χρησιμοποίησε ΠΑΝΤΑ τη διορθωμένη απάντηση)\n\n` +
+        ruleLines.join("\n\n")
+      );
     }
   }
 

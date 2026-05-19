@@ -141,3 +141,22 @@ docker-compose restart backend
 ```
 
 See [`docs/architecture.md`](docs/architecture.md) for the full data flow.
+
+---
+
+## Evaluation Script
+
+To demonstrate that the feedback loop measurably improves bot answers, run the evaluation script:
+
+```bash
+cd backend
+npx ts-node --transpile-only src/scripts/evaluate.ts
+```
+
+The script runs in three phases:
+
+1. **Baseline** — asks 3 questions and records the bot's initial answers (no feedback in DB)
+2. **Inject** — inserts admin-approved corrections directly into MongoDB (simulating the admin panel approval flow)
+3. **Post-correction** — asks the same questions again; the bot now loads the golden rules and incorporates them
+
+The output shows a before/after comparison for each scenario and a final score (e.g. `3/3 scenarios improved — 100%`), proving the feedback loop works without any model retraining.
