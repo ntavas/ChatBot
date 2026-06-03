@@ -144,19 +144,50 @@ See [`docs/architecture.md`](docs/architecture.md) for the full data flow.
 
 ---
 
-## Evaluation Script
+## Evaluation Pipeline
 
-To demonstrate that the feedback loop measurably improves bot answers, run the evaluation script:
+The evaluation pipeline measures the RAG system's retrieval accuracy and the bot's answer quality across 30 test questions. Results are saved in `backend/evaluation-results/`.
+
+### RAG Retrieval Metrics (no AI calls, ~2–5 min)
 
 ```bash
 cd backend
-npx ts-node --transpile-only src/scripts/evaluate.ts
+npx ts-node --transpile-only src/scripts/evaluate.ts --mode=rag-only
+# → evaluation-results/results-rag-only.json
 ```
 
-The script runs in three phases:
+Calculates precision, recall, off-topic rejection rate, and cross-lingual hit rate automatically.
 
-1. **Baseline** — asks 3 questions and records the bot's initial answers (no feedback in DB)
-2. **Inject** — inserts admin-approved corrections directly into MongoDB (simulating the admin panel approval flow)
-3. **Post-correction** — asks the same questions again; the bot now loads the golden rules and incorporates them
+### Full Chat & Baseline (requires AI provider, ~10–20 min each)
 
-The output shows a before/after comparison for each scenario and a final score (e.g. `3/3 scenarios improved — 100%`), proving the feedback loop works without any model retraining.
+```bash
+# Full pipeline: RAG + AI (for manual grading)
+npx ts-node --transpile-only src/scripts/evaluate.ts --mode=full-chat
+# → evaluation-results/results-full-chat.csv  (fill in my_grade: 1/0)
+
+# Baseline: AI only, no RAG (for comparison)
+npx ts-node --transpile-only src/scripts/evaluate.ts --mode=baseline
+# → evaluation-results/results-baseline.csv  (fill in my_grade: 1/0)
+```
+
+### Grading & Comparison Report
+
+After filling in `my_grade` (1=correct, 0=incorrect) in both CSVs:
+
+```bash
+npx ts-node --transpile-only src/scripts/compare.ts
+# → evaluation-results/comparison-report.md  (tables ready for thesis)
+```
+
+### Feedback Loop Experiment
+
+```bash
+# Before/inject/after experiment (5 edge-case scenarios)
+npx ts-node --transpile-only src/scripts/feedback-experiment.ts
+# → evaluation-results/feedback-experiment-report.md
+
+# Clean up test data from MongoDB when done
+npx ts-node --transpile-only src/scripts/cleanup-test-data.ts
+```
+
+The `evaluate.ts` test set contains 30 questions: 10 direct match (D01–D10), 10 paraphrased (P01–P10), 5 off-topic (O01–O05), and 5 cross-lingual English→Greek (X01–X05), covering all 5 FAQ categories (returns, shipping, payments, products, account).

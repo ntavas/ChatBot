@@ -18,7 +18,7 @@ dotenv.config({ path: "/app/.env" });                                          /
 dotenv.config({ path: path.resolve(__dirname, "../../../.env") });             // local dev: project root
 dotenv.config();                                                               // fallback
 
-const VALID_AI_PROVIDERS = ["gemini", "openai", "openrouter"] as const;
+const VALID_AI_PROVIDERS = ["gemini", "openai", "openrouter", "groq"] as const;
 type AIProviderName = typeof VALID_AI_PROVIDERS[number];
 
 /**
@@ -73,4 +73,9 @@ export const env = Object.freeze({
   // --- OpenRouter (required when AI_PROVIDER=openrouter) ---
   OPENROUTER_API_KEY: aiProvider === "openrouter" ? RequireEnvVar("OPENROUTER_API_KEY") : "",
   OPENROUTER_MODEL: aiProvider === "openrouter" ? RequireEnvVar("OPENROUTER_MODEL") : "",
+
+  // --- Groq (required when AI_PROVIDER=groq) ---
+  // Free tier: 14,400 req/day, 30 req/min — δωρεάν λογαριασμός στο console.groq.com
+  GROQ_API_KEY: aiProvider === "groq" ? RequireEnvVar("GROQ_API_KEY") : "",
+  GROQ_MODEL: process.env.GROQ_MODEL ?? "llama-3.3-70b-versatile",
 });

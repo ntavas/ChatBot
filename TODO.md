@@ -239,17 +239,18 @@ This phase upgrades the chatbot from keyword-based to semantic search.
 
 ### 3.3 Evaluation Setup
 
-- [x] Script `backend/src/scripts/evaluate.ts`:
-  - [x] File comment in Greek explaining all 3 phases and why the script exists
-  - [x] Runs 3 evaluation scenarios automatically
-  - [x] ΦΑΣΗ 1 — Baseline: asks each question without any feedback in the DB
-  - [x] ΦΑΣΗ 2 — Injection: inserts approved golden rules directly into MongoDB (simulates admin approval)
-  - [x] ΦΑΣΗ 3 — Post-correction: asks the same questions again with golden rules active
-  - [x] Keyword detection: checks if correction keywords appear in the new answers
-  - [x] Final score: X/N scenarios improved (%)
-  - [x] Prints side-by-side before/after comparison for each scenario
-  > Note: Test dataset is inline in the script (3 scenarios covering returns, shipping, defective products). Each scenario injects a policy change not present in the KB, then verifies the bot adopts it. Implemented as TypeScript (.ts), not .js. Run with: `npx ts-node --transpile-only src/scripts/evaluate.ts`
-- [ ] Results table for the project report (run the script and paste the output)
+- [x] Script `backend/src/scripts/evaluate.ts` — replaced with 30-question test set and 3 modes:
+  - [x] `--mode=rag-only`: 30 questions, calculates precision/recall/off-topic rejection/cross-lingual hit rate, writes results-rag-only.json
+  - [x] `--mode=full-chat`: full RAG + AI pipeline, writes results-full-chat.csv for manual grading
+  - [x] `--mode=baseline`: AI only without RAG, writes results-baseline.csv for comparison
+  - [x] Test set: 10 direct (D01-D10) + 10 paraphrased (P01-P10) + 5 off-topic (O01-O05) + 5 cross-lingual EN→GR (X01-X05)
+  > Note: Replaced old 3-scenario feedback-loop script. New version focuses on RAG retrieval metrics. Comments in Greek throughout.
+- [x] `backend/src/scripts/compare.ts` — reads graded CSVs, outputs comparison-report.md with markdown tables
+- [x] `backend/src/scripts/feedback-experiment.ts` — before/inject/after experiment with 5 edge-case scenarios, writes JSON files + feedback-experiment-report.md
+- [x] `backend/src/scripts/cleanup-test-data.ts` — removes testRun:true feedback and EVAL_ sessions from MongoDB
+- [x] Added `testRun?: boolean` field to Feedback schema (needed for cleanup)
+- [x] Created `backend/evaluation-results/.gitkeep`
+- [ ] Results table for the project report (run rag-only mode and paste results-rag-only.json into thesis)
 
 ### 3.4 Docker & Local Setup
 

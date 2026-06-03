@@ -4,6 +4,7 @@
 
 import { AIProvider } from "../services/AIProvider";
 import { GeminiProvider } from "../services/GeminiProvider";
+import { GroqProvider } from "../services/GroqProvider";
 import { OpenAIProvider } from "../services/OpenAIProvider";
 import { OpenRouterProvider } from "../services/OpenRouterProvider";
 import { env } from "./env";
@@ -22,9 +23,11 @@ export function GetAIProvider(): AIProvider {
       return new OpenAIProvider();
     case "openrouter":
       return new OpenRouterProvider();
+    case "groq":
+      return new GroqProvider();
     default:
       throw new Error(
-        `Unknown AI_PROVIDER value: "${env.AI_PROVIDER}". Must be "gemini", "openai", or "openrouter".`
+        `Unknown AI_PROVIDER value: "${env.AI_PROVIDER}". Must be "gemini", "openai", "openrouter", or "groq".`
       );
   }
 }

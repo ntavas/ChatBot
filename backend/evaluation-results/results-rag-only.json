@@ -1,0 +1,623 @@
+{
+  "runDate": "2026-06-01T18:35:39.209Z",
+  "totalQuestions": 30,
+  "directHitRate": 90,
+  "paraphrasedHitRate": 90,
+  "offTopicRejectionRate": 0,
+  "crossLingualHitRate": 100,
+  "overallPrecision": 92,
+  "perCategoryMetrics": {
+    "direct": {
+      "questions": 10,
+      "hits": 9,
+      "hitRate": 90
+    },
+    "paraphrased": {
+      "questions": 10,
+      "hits": 9,
+      "hitRate": 90
+    },
+    "offTopic": {
+      "questions": 5,
+      "correctlyRejected": 0,
+      "rejectionRate": 0
+    },
+    "crossLingual": {
+      "questions": 5,
+      "hits": 5,
+      "hitRate": 100
+    }
+  },
+  "results": [
+    {
+      "id": "D01",
+      "category": "direct",
+      "question": "Πόσες μέρες έχω για να επιστρέψω ένα προϊόν;",
+      "retrievedTitles": [
+        "Πολιτική Επιστροφών",
+        "Χρόνος Επιστροφής Χρημάτων",
+        "Επιστροφή Ελαττωματικού Προϊόντος"
+      ],
+      "retrievedScores": [
+        0.9156139492988586,
+        0.8427942395210266,
+        0.8314859867095947
+      ],
+      "expectedFaqTitles": [
+        "Πολιτική Επιστροφών"
+      ],
+      "hit": true,
+      "correctlyRejected": false
+    },
+    {
+      "id": "D02",
+      "category": "direct",
+      "question": "Πότε θα λάβω τα χρήματά μου πίσω μετά την επιστροφή;",
+      "retrievedTitles": [
+        "Χρόνος Επιστροφής Χρημάτων",
+        "Πολιτική Επιστροφών",
+        "Πρόβλημα με Χρέωση"
+      ],
+      "retrievedScores": [
+        0.8349229097366333,
+        0.8023332357406616,
+        0.7502052783966064
+      ],
+      "expectedFaqTitles": [
+        "Χρόνος Επιστροφής Χρημάτων"
+      ],
+      "hit": true,
+      "correctlyRejected": false
+    },
+    {
+      "id": "D03",
+      "category": "direct",
+      "question": "Η αποστολή είναι δωρεάν;",
+      "retrievedTitles": [
+        "Κόστος Αποστολής",
+        "Διαθεσιμότητα Προϊόντων",
+        "Πρόγραμμα Πιστότητας ShopEasy Rewards"
+      ],
+      "retrievedScores": [
+        0.8117531538009644,
+        0.683218777179718,
+        0.6805553436279297
+      ],
+      "expectedFaqTitles": [
+        "Κόστος Αποστολής"
+      ],
+      "hit": true,
+      "correctlyRejected": false
+    },
+    {
+      "id": "D04",
+      "category": "direct",
+      "question": "Πόσες μέρες παίρνει η παράδοση;",
+      "retrievedTitles": [
+        "Χρόνοι Παράδοσης",
+        "Χρόνος Επιστροφής Χρημάτων",
+        "Πολιτική Επιστροφών"
+      ],
+      "retrievedScores": [
+        0.7663430571556091,
+        0.740359902381897,
+        0.7079789638519287
+      ],
+      "expectedFaqTitles": [
+        "Χρόνοι Παράδοσης"
+      ],
+      "hit": true,
+      "correctlyRejected": false
+    },
+    {
+      "id": "D05",
+      "category": "direct",
+      "question": "Πώς μπορώ να παρακολουθήσω την παραγγελία μου;",
+      "retrievedTitles": [
+        "Παρακολούθηση Παραγγελίας",
+        "Κουπόνια και Κωδικοί Έκπτωσης",
+        "Αξιολογήσεις και Κριτικές"
+      ],
+      "retrievedScores": [
+        0.7784093022346497,
+        0.7015877366065979,
+        0.6967810392379761
+      ],
+      "expectedFaqTitles": [
+        "Παρακολούθηση Παραγγελίας"
+      ],
+      "hit": true,
+      "correctlyRejected": false
+    },
+    {
+      "id": "D06",
+      "category": "direct",
+      "question": "Ποιες μεθόδους πληρωμής δέχεστε;",
+      "retrievedTitles": [
+        "Αποδεκτές Μέθοδοι Πληρωμής",
+        "Χρόνος Επιστροφής Χρημάτων",
+        "Ασφάλεια Πληρωμών"
+      ],
+      "retrievedScores": [
+        0.7671346664428711,
+        0.7660777568817139,
+        0.7548768520355225
+      ],
+      "expectedFaqTitles": [
+        "Αποδεκτές Μέθοδοι Πληρωμής"
+      ],
+      "hit": true,
+      "correctlyRejected": false
+    },
+    {
+      "id": "D07",
+      "category": "direct",
+      "question": "Πώς δημιουργώ λογαριασμό;",
+      "retrievedTitles": [
+        "Δημιουργία Λογαριασμού",
+        "Αποδεκτές Μέθοδοι Πληρωμής",
+        "Αποστολή σε Διαφορετική Διεύθυνση"
+      ],
+      "retrievedScores": [
+        0.6398721933364868,
+        0.6052371859550476,
+        0.6032634377479553
+      ],
+      "expectedFaqTitles": [
+        "Δημιουργία Λογαριασμού"
+      ],
+      "hit": true,
+      "correctlyRejected": false
+    },
+    {
+      "id": "D08",
+      "category": "direct",
+      "question": "Ξέχασα τον κωδικό μου, τι κάνω;",
+      "retrievedTitles": [
+        "Ξεχασμένος Κωδικός",
+        "Δημιουργία Λογαριασμού",
+        "Αλλαγή Στοιχείων Λογαριασμού"
+      ],
+      "retrievedScores": [
+        0.7646114826202393,
+        0.6964612603187561,
+        0.6896507143974304
+      ],
+      "expectedFaqTitles": [
+        "Ξεχασμένος Κωδικός"
+      ],
+      "hit": true,
+      "correctlyRejected": false
+    },
+    {
+      "id": "D09",
+      "category": "direct",
+      "question": "Τι γίνεται αν παραλάβω ελαττωματικό προϊόν;",
+      "retrievedTitles": [
+        "Επιστροφή Ελαττωματικού Προϊόντος",
+        "Ανταλλαγή Προϊόντος",
+        "Διαθεσιμότητα Προϊόντων"
+      ],
+      "retrievedScores": [
+        0.7598439455032349,
+        0.717192530632019,
+        0.6877790689468384
+      ],
+      "expectedFaqTitles": [
+        "Επιστροφή Ελαττωματικού Προϊόντος"
+      ],
+      "hit": true,
+      "correctlyRejected": false
+    },
+    {
+      "id": "D10",
+      "category": "direct",
+      "question": "Πώς λειτουργεί το πρόγραμμα πιστότητας;",
+      "retrievedTitles": [
+        "Διαθεσιμότητα Προϊόντων",
+        "Αξιολογήσεις και Κριτικές",
+        "Χρόνος Επιστροφής Χρημάτων"
+      ],
+      "retrievedScores": [
+        0.6567298173904419,
+        0.638581395149231,
+        0.6354089379310608
+      ],
+      "expectedFaqTitles": [
+        "Πρόγραμμα Πιστότητας ShopEasy Rewards"
+      ],
+      "hit": false,
+      "correctlyRejected": false
+    },
+    {
+      "id": "P01",
+      "category": "paraphrased",
+      "question": "Μπορώ να στείλω πίσω κάτι που αγόρασα;",
+      "retrievedTitles": [
+        "Πολιτική Επιστροφών",
+        "Ανταλλαγή Προϊόντος",
+        "Επιστροφή Ελαττωματικού Προϊόντος"
+      ],
+      "retrievedScores": [
+        0.7928469777107239,
+        0.7453343868255615,
+        0.7332866787910461
+      ],
+      "expectedFaqTitles": [
+        "Πολιτική Επιστροφών"
+      ],
+      "hit": true,
+      "correctlyRejected": false
+    },
+    {
+      "id": "P02",
+      "category": "paraphrased",
+      "question": "Σε πόσες μέρες επιστρέφονται τα χρήματα στην κάρτα μου;",
+      "retrievedTitles": [
+        "Χρόνος Επιστροφής Χρημάτων",
+        "Πολιτική Επιστροφών",
+        "Πρόβλημα με Χρέωση"
+      ],
+      "retrievedScores": [
+        0.9224480390548706,
+        0.8127050399780273,
+        0.8090142607688904
+      ],
+      "expectedFaqTitles": [
+        "Χρόνος Επιστροφής Χρημάτων"
+      ],
+      "hit": true,
+      "correctlyRejected": false
+    },
+    {
+      "id": "P03",
+      "category": "paraphrased",
+      "question": "Υπάρχει δωρεάν μεταφορικά;",
+      "retrievedTitles": [
+        "Κόστος Αποστολής",
+        "Δημιουργία Λογαριασμού",
+        "Αποδεκτές Μέθοδοι Πληρωμής"
+      ],
+      "retrievedScores": [
+        0.768281877040863,
+        0.6988755464553833,
+        0.6981814503669739
+      ],
+      "expectedFaqTitles": [
+        "Κόστος Αποστολής"
+      ],
+      "hit": true,
+      "correctlyRejected": false
+    },
+    {
+      "id": "P04",
+      "category": "paraphrased",
+      "question": "Πότε αναμένω να παραλάβω την παραγγελία μου;",
+      "retrievedTitles": [
+        "Πρόβλημα με Χρέωση",
+        "Πολιτική Επιστροφών",
+        "Παρακολούθηση Παραγγελίας"
+      ],
+      "retrievedScores": [
+        0.7757037878036499,
+        0.759519636631012,
+        0.7561501264572144
+      ],
+      "expectedFaqTitles": [
+        "Χρόνοι Παράδοσης"
+      ],
+      "hit": false,
+      "correctlyRejected": false
+    },
+    {
+      "id": "P05",
+      "category": "paraphrased",
+      "question": "Έχω αριθμό tracking, πού τον βλέπω;",
+      "retrievedTitles": [
+        "Παρακολούθηση Παραγγελίας",
+        "Τι Γίνεται αν Δεν Ήμουν Εκεί κατά την Παράδοση",
+        "Οδηγός Μεγεθών"
+      ],
+      "retrievedScores": [
+        0.6841978430747986,
+        0.640242338180542,
+        0.5909615755081177
+      ],
+      "expectedFaqTitles": [
+        "Παρακολούθηση Παραγγελίας"
+      ],
+      "hit": true,
+      "correctlyRejected": false
+    },
+    {
+      "id": "P06",
+      "category": "paraphrased",
+      "question": "Δέχεστε PayPal ή κάρτες;",
+      "retrievedTitles": [
+        "Αποδεκτές Μέθοδοι Πληρωμής",
+        "Ασφάλεια Πληρωμών",
+        "Αποστολή σε Διαφορετική Διεύθυνση"
+      ],
+      "retrievedScores": [
+        0.7865506410598755,
+        0.757988452911377,
+        0.6920762062072754
+      ],
+      "expectedFaqTitles": [
+        "Αποδεκτές Μέθοδοι Πληρωμής"
+      ],
+      "hit": true,
+      "correctlyRejected": false
+    },
+    {
+      "id": "P07",
+      "category": "paraphrased",
+      "question": "Θέλω να φτιάξω νέο λογαριασμό στο ShopEasy",
+      "retrievedTitles": [
+        "Δημιουργία Λογαριασμού",
+        "Αποστολή σε Διαφορετική Διεύθυνση",
+        "Αποδεκτές Μέθοδοι Πληρωμής"
+      ],
+      "retrievedScores": [
+        0.8238968253135681,
+        0.7252112030982971,
+        0.6900806427001953
+      ],
+      "expectedFaqTitles": [
+        "Δημιουργία Λογαριασμού"
+      ],
+      "hit": true,
+      "correctlyRejected": false
+    },
+    {
+      "id": "P08",
+      "category": "paraphrased",
+      "question": "Δεν θυμάμαι το password μου",
+      "retrievedTitles": [
+        "Ξεχασμένος Κωδικός",
+        "Δημιουργία Λογαριασμού",
+        "Αλλαγή Στοιχείων Λογαριασμού"
+      ],
+      "retrievedScores": [
+        0.704897940158844,
+        0.6645281910896301,
+        0.6603877544403076
+      ],
+      "expectedFaqTitles": [
+        "Ξεχασμένος Κωδικός"
+      ],
+      "hit": true,
+      "correctlyRejected": false
+    },
+    {
+      "id": "P09",
+      "category": "paraphrased",
+      "question": "Έλαβα κατεστραμμένο προϊόν, τι πρέπει να κάνω;",
+      "retrievedTitles": [
+        "Επιστροφή Ελαττωματικού Προϊόντος",
+        "Πολιτική Επιστροφών",
+        "Ανταλλαγή Προϊόντος"
+      ],
+      "retrievedScores": [
+        0.7584294080734253,
+        0.6594635248184204,
+        0.6418625712394714
+      ],
+      "expectedFaqTitles": [
+        "Επιστροφή Ελαττωματικού Προϊόντος"
+      ],
+      "hit": true,
+      "correctlyRejected": false
+    },
+    {
+      "id": "P10",
+      "category": "paraphrased",
+      "question": "Κερδίζω πόντους με κάθε αγορά;",
+      "retrievedTitles": [
+        "Πρόγραμμα Πιστότητας ShopEasy Rewards",
+        "Κουπόνια και Κωδικοί Έκπτωσης",
+        "Αυθεντικότητα Προϊόντων"
+      ],
+      "retrievedScores": [
+        0.8037912249565125,
+        0.6708968877792358,
+        0.655171275138855
+      ],
+      "expectedFaqTitles": [
+        "Πρόγραμμα Πιστότητας ShopEasy Rewards"
+      ],
+      "hit": true,
+      "correctlyRejected": false
+    },
+    {
+      "id": "O01",
+      "category": "off-topic",
+      "question": "Ποιος είναι ο πρωθυπουργός της Ελλάδας;",
+      "retrievedTitles": [
+        "Χρόνοι Παράδοσης",
+        "Κόστος Αποστολής",
+        "Αποδεκτές Μέθοδοι Πληρωμής"
+      ],
+      "retrievedScores": [
+        0.6485579609870911,
+        0.5880357623100281,
+        0.5696551203727722
+      ],
+      "expectedFaqTitles": [],
+      "hit": false,
+      "correctlyRejected": false
+    },
+    {
+      "id": "O02",
+      "category": "off-topic",
+      "question": "Πες μου μια ιστορία",
+      "retrievedTitles": [
+        "Ξεχασμένος Κωδικός",
+        "Παρακολούθηση Παραγγελίας",
+        "Πρόβλημα με Χρέωση"
+      ],
+      "retrievedScores": [
+        0.5753921270370483,
+        0.5605470538139343,
+        0.5455114245414734
+      ],
+      "expectedFaqTitles": [],
+      "hit": false,
+      "correctlyRejected": false
+    },
+    {
+      "id": "O03",
+      "category": "off-topic",
+      "question": "Τι καιρό κάνει σήμερα;",
+      "retrievedTitles": [
+        "Χρόνοι Παράδοσης",
+        "Ξεχασμένος Κωδικός",
+        "Πρόβλημα με Χρέωση"
+      ],
+      "retrievedScores": [
+        0.6258189082145691,
+        0.559742271900177,
+        0.5533803701400757
+      ],
+      "expectedFaqTitles": [],
+      "hit": false,
+      "correctlyRejected": false
+    },
+    {
+      "id": "O04",
+      "category": "off-topic",
+      "question": "Πώς φτιάχνω σπαγγέτι μπολονέζ;",
+      "retrievedTitles": [
+        "Αυθεντικότητα Προϊόντων",
+        "Οδηγός Μεγεθών",
+        "Ανταλλαγή Προϊόντος"
+      ],
+      "retrievedScores": [
+        0.5570428371429443,
+        0.5458269715309143,
+        0.5376763939857483
+      ],
+      "expectedFaqTitles": [],
+      "hit": false,
+      "correctlyRejected": false
+    },
+    {
+      "id": "O05",
+      "category": "off-topic",
+      "question": "Βοήθησέ με να γράψω ένα ποίημα",
+      "retrievedTitles": [
+        "Κόστος Αποστολής",
+        "Διαθεσιμότητα Προϊόντων",
+        "Ξεχασμένος Κωδικός"
+      ],
+      "retrievedScores": [
+        0.5310290455818176,
+        0.529625654220581,
+        0.5250148773193359
+      ],
+      "expectedFaqTitles": [],
+      "hit": false,
+      "correctlyRejected": false
+    },
+    {
+      "id": "X01",
+      "category": "cross-lingual",
+      "question": "How many days do I have to return a product?",
+      "retrievedTitles": [
+        "Πολιτική Επιστροφών",
+        "Χρόνος Επιστροφής Χρημάτων",
+        "Επιστροφή Ελαττωματικού Προϊόντος"
+      ],
+      "retrievedScores": [
+        0.915837287902832,
+        0.8425773978233337,
+        0.8293696641921997
+      ],
+      "expectedFaqTitles": [
+        "Πολιτική Επιστροφών"
+      ],
+      "hit": true,
+      "correctlyRejected": false
+    },
+    {
+      "id": "X02",
+      "category": "cross-lingual",
+      "question": "Is shipping free?",
+      "retrievedTitles": [
+        "Κόστος Αποστολής",
+        "Αποδεκτές Μέθοδοι Πληρωμής",
+        "Προϊόντα που Δεν Επιστρέφονται"
+      ],
+      "retrievedScores": [
+        0.7532668113708496,
+        0.7169260382652283,
+        0.6902748942375183
+      ],
+      "expectedFaqTitles": [
+        "Κόστος Αποστολής"
+      ],
+      "hit": true,
+      "correctlyRejected": false
+    },
+    {
+      "id": "X03",
+      "category": "cross-lingual",
+      "question": "How do I track my order?",
+      "retrievedTitles": [
+        "Παρακολούθηση Παραγγελίας",
+        "Κουπόνια και Κωδικοί Έκπτωσης",
+        "Τι Γίνεται αν Δεν Ήμουν Εκεί κατά την Παράδοση"
+      ],
+      "retrievedScores": [
+        0.7995806336402893,
+        0.7063392996788025,
+        0.6894349455833435
+      ],
+      "expectedFaqTitles": [
+        "Παρακολούθηση Παραγγελίας"
+      ],
+      "hit": true,
+      "correctlyRejected": false
+    },
+    {
+      "id": "X04",
+      "category": "cross-lingual",
+      "question": "What payment methods do you accept?",
+      "retrievedTitles": [
+        "Αποδεκτές Μέθοδοι Πληρωμής",
+        "Ασφάλεια Πληρωμών",
+        "Χρόνος Επιστροφής Χρημάτων"
+      ],
+      "retrievedScores": [
+        0.7702866792678833,
+        0.7619414329528809,
+        0.7418037056922913
+      ],
+      "expectedFaqTitles": [
+        "Αποδεκτές Μέθοδοι Πληρωμής"
+      ],
+      "hit": true,
+      "correctlyRejected": false
+    },
+    {
+      "id": "X05",
+      "category": "cross-lingual",
+      "question": "I received a damaged product, what should I do?",
+      "retrievedTitles": [
+        "Επιστροφή Ελαττωματικού Προϊόντος",
+        "Ανταλλαγή Προϊόντος",
+        "Προϊόντα που Δεν Επιστρέφονται"
+      ],
+      "retrievedScores": [
+        0.7354933619499207,
+        0.6456550359725952,
+        0.642920732498169
+      ],
+      "expectedFaqTitles": [
+        "Επιστροφή Ελαττωματικού Προϊόντος"
+      ],
+      "hit": true,
+      "correctlyRejected": false
+    }
+  ]
+}

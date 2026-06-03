@@ -29,6 +29,8 @@ export interface FeedbackDocument extends Document {
   category?: string | null;
   // Θέση του μηνύματος μέσα στη συνομιλία (0-based) — προαιρετικό
   messageIndex?: number | null;
+  // Σημαία που δείχνει ότι το έγγραφο δημιουργήθηκε από evaluation script — όχι από πραγματικό χρήστη
+  testRun?: boolean;
   createdAt: Date;
 }
 
@@ -77,6 +79,11 @@ const FeedbackSchema = new Schema<FeedbackDocument>(
     // messageIndex: Η θέση (0-based) του μηνύματος μέσα στη συνομιλία.
     // Βοηθά στον εντοπισμό πλαισίου χωρίς πλήρη φόρτωση της συνομιλίας.
     messageIndex: { type: Number, default: null },
+
+    // testRun: Σημαδεύει ότι αυτό το έγγραφο δημιουργήθηκε από evaluation script.
+    // true = εισήχθη αυτόματα για δοκιμή, δεν είναι πραγματική αξιολόγηση χρήστη.
+    // Χρησιμοποιείται από το cleanup-test-data.ts για διαγραφή δεδομένων δοκιμής.
+    testRun: { type: Boolean, default: false },
   },
   { timestamps: true } // Mongoose αυτόματα διαχειρίζεται το createdAt
 );
