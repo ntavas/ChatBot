@@ -34,7 +34,7 @@ skinparam card {
     FontColor #1A1A2E
 }
 
-title <b>ShopEasy ChatBot — Baseline vs RAG Pipeline</b>
+title <b>Baseline vs RAG Pipeline</b>
 
 together {
 

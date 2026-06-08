@@ -31,7 +31,7 @@ skinparam note {
     FontColor #1A1A2E
 }
 
-title <b>ShopEasy ChatBot — Κύκλος Ζωής Feedback Document</b>
+title <b>Ροή Feedback Loop</b>
 
 [*] --> pending : Χρήστης πατά 👎\n//POST /api/feedback//
 

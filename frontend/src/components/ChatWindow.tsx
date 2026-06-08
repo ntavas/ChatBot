@@ -183,8 +183,7 @@ export function ChatWindow({ isDark, onToggleTheme }: ChatWindowProps) {
             className="w-8 h-8 rounded-lg object-cover flex-shrink-0"
           />
           <div className="flex-1">
-            <h1 className="text-sm font-semibold leading-tight">AI Support Chat</h1>
-            <p className="text-xs text-gray-500 dark:text-zinc-500">Ask me anything</p>
+            <h1 className="text-sm font-semibold leading-tight">ShopEasy Support Chat</h1>
           </div>
 
           {/* Clear chat button — only visible when there are messages.

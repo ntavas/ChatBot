@@ -51,7 +51,7 @@ skinparam sequence {
     GroupHeaderFontColor #1A1A2E
 }
 
-title <b>ShopEasy ChatBot — Ροή Αιτήματος Chat</b>
+title <b>Ροή Αιτήματος</b>
 
 actor "Χρήστης" as User
 participant "ChatWindow\n//React//" as CW
