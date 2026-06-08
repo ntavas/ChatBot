@@ -1,0 +1,100 @@
+' =============================================================
+' Διάγραμμα 6: RAG vs Baseline (Σύγκριση Ροών)
+' Κεφάλαιο: 7.4 — Σύγκριση Full System έναντι Baseline
+' Δείχνει οπτικά τη διαφορά μεταξύ:
+'   - Baseline: ερώτηση → AI → απάντηση (κίνδυνος hallucination)
+'   - Full-chat (RAG): ερώτηση → embedding → vector search
+'     → context injection → AI → τεκμηριωμένη απάντηση
+' Συνοδεύει τα αποτελέσματα αξιολόγησης (+53,3 ποσοστιαίες μονάδες).
+' =============================================================
+
+@startuml 06-rag-vs-baseline
+
+skinparam defaultFontName Arial
+skinparam defaultFontSize 12
+skinparam backgroundColor #FFFFFF
+skinparam ArrowColor #4A6FA5
+skinparam ArrowThickness 2
+
+skinparam rectangle {
+    BorderThickness 1.5
+    FontStyle bold
+}
+
+skinparam note {
+    BackgroundColor #FFFDE7
+    BorderColor #C8A200
+    FontSize 10
+}
+
+skinparam card {
+    BackgroundColor #FFFFFF
+    BorderColor #4A6FA5
+    BorderThickness 1
+    FontColor #1A1A2E
+}
+
+title <b>ShopEasy ChatBot — Baseline vs RAG Pipeline</b>
+
+together {
+
+    ' ─────────────────────────────────────────
+    ' ΑΡΙΣΤΕΡΑ: Baseline
+    ' ─────────────────────────────────────────
+    rectangle "BASELINE\n//Χωρίς ανάκτηση γνώσης//" as BL_BOX #FBE9E7 {
+
+        card "Ερώτηση\nχρήστη" as BL_Q #FFF3E0
+        card "AI Provider\n//LLM μόνο με\nεκπαιδευτική γνώση//" as BL_AI #FFCCBC
+        card "Απάντηση" as BL_A #FFF3E0
+
+        BL_Q -down-> BL_AI : αποστολή ερώτησης
+        BL_AI -down-> BL_A : παραγωγή απάντησης
+    }
+
+    note bottom of BL_BOX #FFEBEE
+      <color:#C62828><b>Κίνδυνος:</b></color>
+      • Ψευδαισθήσεις (hallucinations)
+      • Απαντήσεις εκτός πλαισίου
+      • Αναξιόπιστες πληροφορίες
+        για το κατάστημα
+    end note
+
+}
+
+together {
+
+    ' ─────────────────────────────────────────
+    ' ΔΕΞΙΑ: Full-chat (RAG)
+    ' ─────────────────────────────────────────
+    rectangle "FULL-CHAT (RAG)\n//Με ανάκτηση γνώσης//" as RAG_BOX #E8F5E9 {
+
+        card "Ερώτηση\nχρήστη" as RAG_Q #F1F8E9
+        card "Μετατροπή σε\nEmbedding\n//embeddingService\nvector[384]//" as RAG_EMB #C8E6C9
+        card "Vector Search\n//MongoDB $vectorSearch\ncosine, top-3, score≥0.5//" as RAG_VS #A5D6A7
+        card "Context Injection\n//RAG context +\ngolden rules → system prompt//" as RAG_CTX #81C784
+        card "AI Provider\n//LLM εμπλουτισμένο\nμε τεκμηριωμένο context//" as RAG_AI #66BB6A
+        card "Τεκμηριωμένη\nΑπάντηση" as RAG_A #F1F8E9
+
+        RAG_Q -down-> RAG_EMB : αποστολή ερώτησης
+        RAG_EMB -down-> RAG_VS : αναζήτηση ομοιότητας
+        RAG_VS -down-> RAG_CTX : ανάκτηση FAQ (top-3)
+        RAG_CTX -down-> RAG_AI : εμπλουτισμένο prompt
+        RAG_AI -down-> RAG_A : παραγωγή απάντησης
+    }
+
+    note bottom of RAG_BOX #E8F5E9
+      <color:#2E7D32><b>Αποτέλεσμα αξιολόγησης:</b></color>
+      • Correctness: +53,3 μονάδες
+      • Τεκμηριωμένες απαντήσεις
+      • Μηδενικές ψευδαισθήσεις
+        στις δοκιμασμένες ερωτήσεις
+    end note
+
+}
+
+' ─────────────────────────────────────────
+' Σύγκριση κατ' ευθείαν
+' ─────────────────────────────────────────
+BL_BOX -right[hidden]-> RAG_BOX
+
+@enduml

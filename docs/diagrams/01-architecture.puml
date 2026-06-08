@@ -1,0 +1,152 @@
+' =============================================================
+' Διάγραμμα 1: Τριεπίπεδη Αρχιτεκτονική (Component Diagram)
+' Κεφάλαιο: 5.1 — Επισκόπηση Τριεπίπεδης Αρχιτεκτονικής
+' Δείχνει τη δομή του συστήματος σε τρία επίπεδα:
+'   - Επίπεδο Παρουσίασης (React/Vite Frontend)
+'   - Επίπεδο Εφαρμογής  (Node.js/Express Backend)
+'   - Επίπεδο Δεδομένων  (MongoDB Atlas + Εξωτερικές Υπηρεσίες)
+' =============================================================
+
+@startuml 01-architecture
+
+skinparam defaultFontName Arial
+skinparam defaultFontSize 12
+skinparam backgroundColor #FFFFFF
+skinparam ArrowColor #4A6FA5
+skinparam ArrowThickness 1.5
+
+skinparam rectangle {
+    BackgroundColor #F4F7FB
+    BorderColor #4A6FA5
+    BorderThickness 1.5
+    FontColor #1A1A2E
+    FontStyle bold
+}
+
+skinparam component {
+    BackgroundColor #FFFFFF
+    BorderColor #4A6FA5
+    BorderThickness 1
+    FontColor #1A1A2E
+}
+
+skinparam database {
+    BackgroundColor #EAF0FB
+    BorderColor #2E5FA3
+    FontColor #1A1A2E
+}
+
+skinparam note {
+    BackgroundColor #FFFDE7
+    BorderColor #C8A200
+    FontSize 10
+}
+
+title <b>ShopEasy ChatBot — Τριεπίπεδη Αρχιτεκτονική</b>
+
+' ─────────────────────────────────────────
+' ΕΠΙΠΕΔΟ ΠΑΡΟΥΣΙΑΣΗΣ
+' ─────────────────────────────────────────
+rectangle "Επίπεδο Παρουσίασης\n//React + Vite//" as FRONTEND {
+    component "ChatWindow" as ChatWindow
+    component "MessageBubble" as MessageBubble
+    component "FeedbackButtons" as FeedbackButtons
+    component "AdminPage" as AdminPage
+    component "apiService" as apiService #E8F0FE
+}
+
+' ─────────────────────────────────────────
+' ΕΠΙΠΕΔΟ ΕΦΑΡΜΟΓΗΣ
+' ─────────────────────────────────────────
+rectangle "Επίπεδο Εφαρμογής\n//Node.js + Express//" as BACKEND {
+
+    rectangle "Routes Layer" as ROUTES #EEF2FF {
+        component "chatRoutes" as chatRoutes
+        component "feedbackRoutes" as feedbackRoutes
+        component "adminRoutes" as adminRoutes
+    }
+
+    rectangle "Services Layer" as SERVICES #E8F5E9 {
+        component "chatService" as chatService
+        component "ragService" as ragService
+        component "embeddingService" as embeddingService
+        component "feedbackEngine" as feedbackEngine
+        component "aiProviderFactory" as aiProviderFactory
+    }
+
+    rectangle "Repository Layer" as REPOS #FFF3E0 {
+        component "conversationRepository" as convRepo
+        component "feedbackRepository" as feedRepo
+        component "knowledgeRepository" as knRepo
+    }
+}
+
+' ─────────────────────────────────────────
+' ΕΠΙΠΕΔΟ ΔΕΔΟΜΕΝΩΝ
+' ─────────────────────────────────────────
+rectangle "Επίπεδο Δεδομένων\n//Αποθήκευση & Εξωτερικές Υπηρεσίες//" as DATA {
+
+    database "MongoDB Atlas" as MongoDB {
+        collections conversations
+        collections feedbacks
+        collections knowledgebases
+    }
+
+    component "@xenova/transformers\nall-MiniLM-L12-v2\n//Τοπικό μοντέλο//" as EmbModel #EAF7FB
+
+    component "AI Provider\n//Groq / OpenRouter /\nGemini / OpenAI//" as AIProvider #FBE9E7
+}
+
+' ─────────────────────────────────────────
+' ΣΥΝΔΕΣΕΙΣ — Frontend → Backend
+' ─────────────────────────────────────────
+ChatWindow --> apiService
+MessageBubble --> apiService
+FeedbackButtons --> apiService
+AdminPage --> apiService
+
+apiService --> chatRoutes : "POST /api/chat"
+apiService --> feedbackRoutes : "POST /api/feedback"
+apiService --> adminRoutes : "GET/PUT /api/admin/..."
+
+' Routes → Services
+chatRoutes --> chatService
+feedbackRoutes --> feedbackEngine
+adminRoutes --> feedbackEngine
+adminRoutes --> knRepo
+
+' Services
+chatService --> ragService : "findRelevantDocs()"
+chatService --> feedbackEngine : "getGoldenRules()"
+chatService --> aiProviderFactory : "generateResponse()"
+ragService --> embeddingService : "getEmbedding()"
+
+' Services → Repositories
+chatService --> convRepo
+feedbackEngine --> feedRepo
+ragService --> knRepo
+
+' Repositories → MongoDB
+convRepo --> MongoDB
+feedRepo --> MongoDB
+knRepo --> MongoDB
+
+' Services → External
+embeddingService --> EmbModel : "384-dim vector"
+aiProviderFactory --> AIProvider : "HTTP API"
+
+note right of EmbModel
+  Εκτελείται τοπικά·
+  δεν απαιτεί cloud API.
+  Λήψη ~80 MB μόνο
+  στην πρώτη εκκίνηση.
+end note
+
+note right of AIProvider
+  Ανταλλάξιμος provider
+  μέσω AI_PROVIDER env var.
+  Χρησιμοποιείται OpenRouter
+  για το demo.
+end note
+
+@enduml

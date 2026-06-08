@@ -1,0 +1,120 @@
+' =============================================================
+' Διάγραμμα 4: Σχήματα Δεδομένων MongoDB (Class/ER Diagram)
+' Κεφάλαιο: 5.3 — Σχήματα Δεδομένων MongoDB
+' Δείχνει τις τρεις collections του συστήματος (Mongoose schemas):
+'   - conversations: αποθηκεύει ιστορικό συνομιλιών
+'   - feedbacks: αποθηκεύει αξιολογήσεις χρηστών
+'   - knowledgebases: αποθηκεύει FAQ + vector embeddings
+' Οι σχέσεις είναι λογικές (μη σχεσιακή βάση NoSQL).
+' =============================================================
+
+@startuml 04-data-schema
+
+skinparam defaultFontName Arial
+skinparam defaultFontSize 11
+skinparam backgroundColor #FFFFFF
+skinparam classBackgroundColor #F4F7FB
+skinparam classBorderColor #4A6FA5
+skinparam classBorderThickness 1.5
+skinparam classHeaderBackgroundColor #4A6FA5
+skinparam classFontColor #FFFFFF
+skinparam classAttributeFontColor #1A1A2E
+skinparam classStereotypeFontColor #CCDDFF
+skinparam ArrowColor #4A6FA5
+skinparam ArrowThickness 1.5
+skinparam noteBorderColor #C8A200
+skinparam noteBackgroundColor #FFFDE7
+skinparam noteFontSize 10
+
+title <b>ShopEasy ChatBot — Σχήματα Δεδομένων MongoDB</b>
+
+note as N_NOSQL
+  <b>Σημείωση:</b> Πρόκειται για Document Collections (MongoDB / Mongoose).
+  Δεν υπάρχουν foreign keys — οι σχέσεις είναι λογικές,
+  υλοποιούνται μέσω κοινών τιμών πεδίων (π.χ. sessionId).
+end note
+
+' ─────────────────────────────────────────
+' Collection: conversations
+' ─────────────────────────────────────────
+class "conversations" as Conversations <<collection>> {
+    + _id : ObjectId
+    --
+    + sessionId : String  //unique//
+    + messages  : Message[]
+    --
+    + createdAt : Date    //auto//
+    + updatedAt : Date    //auto//
+}
+
+class "Message" as Message <<embedded document>> {
+    + messageId : String
+    + role      : String  //"user" | "assistant"//
+    + content   : String
+    + timestamp : Date
+}
+
+' ─────────────────────────────────────────
+' Collection: feedbacks
+' ─────────────────────────────────────────
+class "feedbacks" as Feedbacks <<collection>> {
+    + _id         : ObjectId
+    --
+    + messageId   : String
+    + sessionId   : String
+    + rating      : Number   //+1 | -1//
+    + userQuestion: String
+    + botAnswer   : String
+    + correction  : String   //προτεινόμενη διόρθωση//
+    + status      : String   //"pending" | "approved" | "rejected"//
+    + category    : String   //προαιρετικό//
+    + testRun     : Boolean  //true αν από evaluate.js//
+    --
+    + createdAt   : Date     //auto//
+}
+
+' ─────────────────────────────────────────
+' Collection: knowledgebases
+' ─────────────────────────────────────────
+class "knowledgebases" as KnowledgeBases <<collection>> {
+    + _id       : ObjectId
+    --
+    + title     : String
+    + content   : String
+    + category  : String
+    + embedding : Number[]   //[384 διαστάσεις]//
+    + isActive  : Boolean    //default: true//
+    --
+    + createdAt : Date       //auto//
+    + updatedAt : Date       //auto//
+}
+
+' ─────────────────────────────────────────
+' Σχέσεις
+' ─────────────────────────────────────────
+Conversations "1" *-- "0..*" Message : "messages[] (embedded)"
+
+Conversations "1" ..> "0..*" Feedbacks : "sessionId\n//λογική σύνδεση//"
+
+note on link
+  Όχι foreign key —
+  κοινή τιμή sessionId
+end note
+
+note bottom of KnowledgeBases
+  Το πεδίο <b>embedding</b> αποθηκεύει
+  το αποτέλεσμα του μοντέλου
+  <b>all-MiniLM-L12-v2</b>.
+  Διαστάσεις: ακριβώς <b>384</b>.
+  Χρησιμοποιείται για $vectorSearch
+  (cosine similarity) στο MongoDB Atlas.
+end note
+
+note right of Feedbacks
+  Μόνο τα <b>approved</b> feedbacks
+  εγχέονται στο system prompt
+  μέσω feedbackEngine.
+  Όριο: max 5 golden rules.
+end note
+
+@enduml

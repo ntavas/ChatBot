@@ -1,0 +1,173 @@
+' =============================================================
+' Διάγραμμα 2: Ροή Αιτήματος Chat (Sequence Diagram)
+' Κεφάλαιο: 5.5 — Ροές Δεδομένων / 6.3 — Chat Service
+' Δείχνει τα 6 βήματα επεξεργασίας κάθε μηνύματος χρήστη:
+'   1. Φόρτωση ιστορικού session
+'   2. RAG ανάκτηση (embedding + vector search)
+'   3. Ανάκτηση golden rules (feedbackEngine)
+'   4. Δόμηση dynamic system prompt
+'   5. Κλήση AI provider
+'   6. Αποθήκευση & επιστροφή απάντησης
+' =============================================================
+
+@startuml 02-chat-sequence
+
+skinparam defaultFontName Arial
+skinparam defaultFontSize 11
+skinparam backgroundColor #FFFFFF
+skinparam sequenceArrowThickness 1.5
+skinparam sequenceArrowColor #4A6FA5
+skinparam sequenceLifeLineBorderColor #4A6FA5
+skinparam sequenceLifeLineBackgroundColor #F4F7FB
+
+skinparam participant {
+    BackgroundColor #EEF2FF
+    BorderColor #4A6FA5
+    FontColor #1A1A2E
+    FontStyle bold
+}
+
+skinparam actor {
+    BackgroundColor #FFFFFF
+    BorderColor #4A6FA5
+    FontColor #1A1A2E
+}
+
+skinparam database {
+    BackgroundColor #EAF0FB
+    BorderColor #2E5FA3
+}
+
+skinparam note {
+    BackgroundColor #FFFDE7
+    BorderColor #C8A200
+    FontSize 10
+}
+
+skinparam sequence {
+    GroupBackgroundColor #F0F4FF
+    GroupBorderColor #4A6FA5
+    GroupFontColor #1A1A2E
+    GroupHeaderFontColor #1A1A2E
+}
+
+title <b>ShopEasy ChatBot — Ροή Αιτήματος Chat</b>
+
+actor "Χρήστης" as User
+participant "ChatWindow\n//React//" as CW
+participant "chatRoutes\n//Express//" as CR
+participant "chatService" as CS
+participant "ragService" as RS
+participant "embeddingService" as ES
+participant "feedbackEngine" as FE
+participant "AI Provider\n//OpenRouter κ.ά.//" as AI
+database "MongoDB" as DB
+
+' ─────────────────────────────────────────
+' Βήμα 0: Αποστολή μηνύματος
+' ─────────────────────────────────────────
+User -> CW : Πληκτρολογεί μήνυμα & πατά Enter
+activate CW
+
+CW -> CW : Optimistic UI update\n(εμφάνιση φούσκας αμέσως)
+CW -> CR : POST /api/chat\n{ sessionId, message }
+activate CR
+
+CR -> CS : processUserMessage(sessionId, message)
+activate CS
+
+' ─────────────────────────────────────────
+' Βήμα 1: Φόρτωση ιστορικού
+' ─────────────────────────────────────────
+group Βήμα 1 — Φόρτωση Ιστορικού Session
+    CS -> DB : find({ sessionId })\n//conversationRepository//
+    DB --> CS : messages[] (ιστορικό συνομιλίας)
+end
+
+' ─────────────────────────────────────────
+' Βήμα 2: RAG ανάκτηση
+' ─────────────────────────────────────────
+group Βήμα 2 — RAG Ανάκτηση Σχετικού Περιεχομένου
+    CS -> RS : findRelevantDocs(message)
+    activate RS
+
+    RS -> ES : getEmbedding(message)
+    activate ES
+    ES -> ES : Φόρτωση all-MiniLM-L12-v2\n(τοπικά, cached)
+    ES --> RS : vector[384]
+    deactivate ES
+
+    RS -> DB : $vectorSearch\n//knowledgebases collection//
+    note right of DB
+      cosine similarity
+      top-3 αποτελέσματα
+      MIN_SCORE = 0.5
+    end note
+    DB --> RS : relevantDocs[0..3]
+
+    RS --> CS : relevantDocs[]
+    deactivate RS
+end
+
+' ─────────────────────────────────────────
+' Βήμα 3: Golden rules
+' ─────────────────────────────────────────
+group Βήμα 3 — Ανάκτηση Εγκεκριμένων Διορθώσεων
+    CS -> FE : getGoldenRules()
+    activate FE
+    FE -> DB : find({ status: "approved" })\n//feedbacks collection//
+    DB --> FE : approvedFeedbacks[] (max 5)
+    FE --> CS : goldenRules[]
+    deactivate FE
+
+    CS -> FE : getNegativeExamples()
+    activate FE
+    FE -> DB : find({ status: "approved", rating: -1 })
+    DB --> FE : negativeExamples[] (max 5)
+    FE --> CS : negativeExamples[]
+    deactivate FE
+end
+
+' ─────────────────────────────────────────
+' Βήμα 4: Δόμηση system prompt
+' ─────────────────────────────────────────
+group Βήμα 4 — Δόμηση Dynamic System Prompt
+    CS -> CS : buildSystemPrompt(\n  basePrompt +\n  RAG context +\n  goldenRules +\n  negativeExamples\n)
+    note right of CS
+      Το system prompt περιλαμβάνει:
+      • Βασικές οδηγίες (base)
+      • Έως 3 FAQ από το RAG
+      • Έως 5 golden rules (few-shot)
+      • Έως 5 negative examples
+    end note
+end
+
+' ─────────────────────────────────────────
+' Βήμα 5: Κλήση AI
+' ─────────────────────────────────────────
+group Βήμα 5 — Κλήση AI Provider
+    CS -> AI : generateResponse(\n  systemPrompt,\n  conversationHistory,\n  userMessage\n)
+    activate AI
+    AI --> CS : assistantReply (text)
+    deactivate AI
+end
+
+' ─────────────────────────────────────────
+' Βήμα 6: Αποθήκευση & επιστροφή
+' ─────────────────────────────────────────
+group Βήμα 6 — Αποθήκευση & Επιστροφή
+    CS -> DB : updateOne — push user + assistant messages\n//conversationRepository//
+    DB --> CS : acknowledged
+
+    CS --> CR : { reply, sessionId }
+    deactivate CS
+end
+
+CR --> CW : 200 OK { reply }
+deactivate CR
+
+CW -> CW : Εμφάνιση απάντησης &\nαναπαραγωγή notification sound
+CW --> User : Εμφανίζεται η απάντηση
+deactivate CW
+
+@enduml

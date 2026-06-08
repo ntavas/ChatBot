@@ -1,0 +1,74 @@
+' =============================================================
+' Διάγραμμα 5: Μηχανή Καταστάσεων Feedback (State Diagram)
+' Κεφάλαιο: 5.5 — Ροές Δεδομένων / 6.4 — Feedback Engine
+' Δείχνει τον πλήρη κύκλο ζωής ενός feedback document:
+'   - Δημιουργία (pending) όταν ο χρήστης πατά 👎
+'   - Μετάβαση σε approved (→ golden rule) ή rejected
+'   - Χρήση των approved διορθώσεων σε μελλοντικά prompts
+' =============================================================
+
+@startuml 05-feedback-state
+
+skinparam defaultFontName Arial
+skinparam defaultFontSize 12
+skinparam backgroundColor #FFFFFF
+
+skinparam state {
+    BackgroundColor #F4F7FB
+    BorderColor #4A6FA5
+    BorderThickness 1.5
+    FontColor #1A1A2E
+    ArrowColor #555555
+    ArrowThickness 1.6
+    StartColor #2E5FA3
+    EndColor #2E5FA3
+}
+
+skinparam note {
+    BackgroundColor #FFFDE7
+    BorderColor #C8A200
+    FontSize 10
+    FontColor #1A1A2E
+}
+
+title <b>ShopEasy ChatBot — Κύκλος Ζωής Feedback Document</b>
+
+[*] --> pending : Χρήστης πατά 👎\n//POST /api/feedback//
+
+state pending #FFF8E1 : Αναμένει έλεγχο\nαπό τον διαχειριστή
+
+state approved #E8F5E9 : Εγκεκριμένη διόρθωση.\nΕνεργό «golden rule».
+
+state rejected #F5F5F5 : Απορριφθείσα αξιολόγηση.\nΔεν επηρεάζει τις απαντήσεις.
+
+pending --> approved : Διαχειριστής εγκρίνει\n//{ status: "approved" }//
+pending --> rejected : Διαχειριστής απορρίπτει\n//{ status: "rejected" }//
+
+approved --> [*] : παραμένει ενεργό\nσε κάθε επόμενο αίτημα
+rejected --> [*] : παραμένει στη βάση\nγια ιστορικό αρχείο
+
+note right of pending
+  Αποθηκεύεται:
+  • userQuestion
+  • botAnswer
+  • correction
+  • rating = -1
+  • status = "pending"
+end note
+
+note right of approved
+  <b>feedbackEngine.getGoldenRules()</b>
+  ανακτά τα approved feedbacks
+  και τα προσθέτει στο system prompt
+  ως few-shot παραδείγματα.
+
+  Όριο: max <b>5</b> golden rules
+  για αποφυγή prompt overflow.
+end note
+
+note right of rejected
+  Αγνοείται πλήρως
+  από το feedbackEngine.
+end note
+
+@enduml

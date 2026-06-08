@@ -1,0 +1,166 @@
+' =============================================================
+' Διάγραμμα 3: Κύκλος Human-in-the-Loop Feedback
+' Κεφάλαιο: 5.5 — Ροές Δεδομένων / 6.4 — Feedback Engine
+' Δείχνει τον πλήρη κύκλο ανατροφοδότησης σε δύο φάσεις:
+'   Φάση Α: Υποβολή αρνητικής αξιολόγησης & έγκριση από διαχειριστή
+'   Φάση Β: Αυτόματη έγχυση εγκεκριμένων διορθώσεων σε επόμενα αιτήματα
+' Τονίζεται ότι η βελτίωση γίνεται χωρίς επανεκπαίδευση του μοντέλου.
+' =============================================================
+
+@startuml 03-feedback-loop
+
+skinparam defaultFontName Arial
+skinparam defaultFontSize 11
+skinparam backgroundColor #FFFFFF
+skinparam sequenceArrowThickness 1.5
+skinparam sequenceArrowColor #4A6FA5
+skinparam sequenceLifeLineBorderColor #4A6FA5
+skinparam sequenceLifeLineBackgroundColor #F4F7FB
+
+skinparam participant {
+    BackgroundColor #EEF2FF
+    BorderColor #4A6FA5
+    FontColor #1A1A2E
+    FontStyle bold
+}
+
+skinparam actor {
+    BackgroundColor #FFFFFF
+    BorderColor #4A6FA5
+    FontColor #1A1A2E
+}
+
+skinparam database {
+    BackgroundColor #EAF0FB
+    BorderColor #2E5FA3
+}
+
+skinparam note {
+    BackgroundColor #FFFDE7
+    BorderColor #C8A200
+    FontSize 10
+}
+
+skinparam sequence {
+    GroupBackgroundColor #F0F4FF
+    GroupBorderColor #4A6FA5
+    GroupFontColor #1A1A2E
+    GroupHeaderFontColor #1A1A2E
+    DividerBackgroundColor #D0DCFF
+    DividerFontColor #1A1A2E
+    DividerFontStyle bold
+}
+
+title <b>ShopEasy ChatBot — Κύκλος Human-in-the-Loop Feedback</b>
+
+actor "Χρήστης" as User
+participant "ChatWindow\n//React//" as CW
+participant "feedbackRoutes\n//Express//" as FR
+participant "feedbackEngine" as FE
+database "MongoDB\n//feedbacks//" as DB
+actor "Διαχειριστής" as Admin
+participant "AdminPage\n//React//" as AP
+participant "adminRoutes\n//Express//" as AR
+participant "chatService" as CS
+participant "AI Provider" as AI
+
+== ΦΑΣΗ Α — Υποβολή Αρνητικής Αξιολόγησης & Έγκριση ==
+
+User -> CW : Πατά 👎 σε απάντηση του bot
+activate CW
+CW -> CW : Εμφάνιση πεδίου διόρθωσης\n"Ποια θα ήταν η σωστή απάντηση;"
+
+User -> CW : Γράφει διόρθωση & υποβάλλει
+CW -> FR : POST /api/feedback\n{ messageId, sessionId, rating: -1,\n  userQuestion, botAnswer, correction }
+activate FR
+
+FR -> FE : saveFeedback(data)
+activate FE
+FE -> DB : insertOne({ ...data, status: "pending" })
+DB --> FE : acknowledged
+FE --> FR : { success: true }
+deactivate FE
+
+FR --> CW : 201 Created
+deactivate FR
+CW --> User : "Η αξιολόγησή σας καταχωρήθηκε"
+deactivate CW
+
+note over DB
+  Νέο feedback document:
+  status = "pending"
+  Αναμένει έγκριση από
+  τον διαχειριστή.
+end note
+
+|||
+
+Admin -> AP : Ανοίγει Admin Panel
+activate AP
+AP -> AR : GET /api/admin/feedback?status=pending
+activate AR
+AR -> FE : getPendingFeedback()
+activate FE
+FE -> DB : find({ status: "pending" })
+DB --> FE : pendingList[]
+FE --> AR : pendingList[]
+deactivate FE
+AR --> AP : pendingList[]
+deactivate AR
+AP --> Admin : Εμφάνιση λίστας pending feedback
+
+Admin -> AP : Επεξεργάζεται & εγκρίνει ή απορρίπτει
+AP -> AR : PUT /api/admin/feedback/:id\n{ status: "approved", correctedAnswer }
+activate AR
+AR -> FE : approveFeedback(id, correctedAnswer)
+activate FE
+FE -> DB : updateOne({ _id }, { status: "approved" })
+DB --> FE : acknowledged
+FE --> AR : { success: true }
+deactivate FE
+AR --> AP : 200 OK
+deactivate AR
+AP --> Admin : "Εγκρίθηκε — θα εγχυθεί στις επόμενες απαντήσεις"
+deactivate AP
+
+== ΦΑΣΗ Β — Έγχυση σε Επόμενο Αίτημα (διαφορετικό session) ==
+
+note over User, AI
+  Ένας <b>οποιοσδήποτε</b> χρήστης στέλνει νέο μήνυμα.
+  Το σύστημα χρησιμοποιεί αυτόματα τις εγκεκριμένες
+  διορθώσεις — <b>χωρίς επανεκπαίδευση του μοντέλου</b>.
+end note
+
+User -> CW : Νέο μήνυμα (νέο session)
+activate CW
+CW -> CS : POST /api/chat → processUserMessage()
+activate CS
+
+CS -> FE : getGoldenRules()
+activate FE
+FE -> DB : find({ status: "approved" })\nlimit(5), sort by createdAt
+DB --> FE : approvedCorrections[]
+FE --> CS : goldenRules[] (few-shot examples)
+deactivate FE
+
+CS -> CS : buildSystemPrompt:\nβάζει goldenRules ως\nfew-shot παραδείγματα
+
+CS -> AI : generateResponse(enrichedPrompt, ...)
+activate AI
+
+note right of AI
+  Το AI "βλέπει" τις
+  εγκεκριμένες διορθώσεις
+  ως παραδείγματα σωστής
+  συμπεριφοράς (few-shot).
+end note
+
+AI --> CS : βελτιωμένη απάντηση
+deactivate AI
+
+CS --> CW : reply
+deactivate CS
+CW --> User : Εμφάνιση βελτιωμένης απάντησης
+deactivate CW
+
+@enduml
